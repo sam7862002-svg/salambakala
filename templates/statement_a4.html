@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>A4 Statement of Account</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #525659; padding: 20px; display: flex; justify-content: center; }
+    .page-a4 {
+      width: 210mm; min-height: 297mm; padding: 20mm 15mm;
+      background: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .header { display: flex; justify-content: space-between; border-bottom: 2px solid #2563eb; padding-bottom: 12px; }
+    .store-brand h1 { font-size: 20px; color: #1e3a8a; }
+    .store-brand h2 { font-size: 15px; color: #475569; direction: rtl; }
+    .store-brand p { font-size: 11px; color: #64748b; margin-top: 3px; }
+    .doc-meta { text-align: right; }
+    .doc-meta h3 { font-size: 17px; color: #0f172a; }
+    .doc-meta p { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+    .party-card {
+      margin: 15px 0; background: #f8fafc; border: 1px solid #e2e8f0;
+      border-radius: 6px; padding: 12px; display: flex; justify-content: space-between; font-size: 12px;
+    }
+    .party-card b { color: #0f172a; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+    th { background: #f1f5f9; border-bottom: 2px solid #cbd5e1; padding: 8px 10px; text-align: left; color: #334155; }
+    td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; }
+    tr:hover { background: #f8fafc; }
+    .text-red { color: #dc2626; font-weight: bold; }
+    .text-green { color: #16a34a; font-weight: bold; }
+
+    .footer { margin-top: 25px; border-top: 1px solid #cbd5e1; padding-top: 15px; display: flex; justify-content: space-between; align-items: flex-end; }
+    .bank-info { font-size: 11px; line-height: 1.5; color: #334155; }
+    .stamp-box { text-align: center; }
+    .stamp-box p { font-size: 11px; margin-bottom: 6px; color: #475569; font-weight: 600; }
+    .stamp-img { max-height: 70px; max-width: 140px; }
+
+    .btn-print-floating {
+      position: fixed; bottom: 25px; right: 25px; background: #2563eb; color: #fff;
+      border: none; padding: 12px 24px; border-radius: 8px; font-size: 15px;
+      font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .page-a4 { box-shadow: none; padding: 10mm; width: 100%; min-height: auto; }
+      .btn-print-floating { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="btn-print-floating" onclick="window.print()">🖨️ Print Statement</button>
+
+  <div class="page-a4">
+    <div>
+      <div class="header">
+        <div class="store-brand">
+          <h1 id="storeNameEn">STORE NAME</h1>
+          <h2 id="storeNameAr">اسم المتجر</h2>
+          <p id="storeTaxInfo">VAT: -- | CR: --</p>
+          <p id="storeAddress">Saudi Arabia</p>
+        </div>
+        <div class="doc-meta">
+          <h3>STATEMENT OF ACCOUNT</h3>
+          <h4 style="direction: rtl; font-size: 13px; color: #64748b;">كشف حساب</h4>
+          <p>Generated: <span id="genDate"></span></p>
+          <p>Period: <span id="periodDate">All Time</span></p>
+        </div>
+      </div>
+
+      <div class="party-card">
+        <div>
+          <b>Account / العميل - المورد:</b> <span id="partyName"></span><br>
+          <b>Phone:</b> <span id="partyPhone"></span> | <b>VAT:</b> <span id="partyVat"></span><br>
+          <b>Address:</b> <span id="partyAddr"></span>
+        </div>
+        <div style="text-align: right;">
+          <span style="font-size: 11px; color: #64748b;">Current Balance Due / الرصيد المستحق</span><br>
+          <span style="font-size: 20px; font-weight: 900; color: #dc2626;" id="partyNetBal">0.00 SAR</span>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Date / التاريخ</th>
+            <th>Ref / المرجع</th>
+            <th>Description / البيان</th>
+            <th style="text-align: right;">Debit / مدين</th>
+            <th style="text-align: right;">Credit / دائن</th>
+            <th style="text-align: right;">Balance / الرصيد</th>
+          </tr>
+        </thead>
+        <tbody id="ledgerRows"></tbody>
+      </table>
+    </div>
+
+    <div class="footer">
+      <div class="bank-info">
+        <b>Bank Details / الحساب البنكي:</b><br>
+        <span id="bankName">Al Rajhi Bank</span><br>
+        IBAN: <span id="storeIban">SA...</span>
+      </div>
+      <div class="stamp-box">
+        <p>Authorized Signature & Stamp</p>
+        <div id="sealWrap"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function loadData() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const partyId = urlParams.get('id');
+      const from = urlParams.get('from') || '';
+      const to = urlParams.get('to') || '';
+
+      document.getElementById('genDate').innerText = new Date().toISOString().slice(0, 10);
+      if (from || to) {
+        document.getElementById('periodDate').innerText = `${from || 'Start'} to ${to || 'Today'}`;
+      }
+
+      // 1. Load Settings
+      try {
+        const sRes = await fetch('/api/settings');
+        const sJson = await sRes.json();
+        if (sJson.success && sJson.data) {
+          const s = sJson.data;
+          document.getElementById('storeNameEn').innerText = s.company_name_en || 'MY RETAIL STORE';
+          document.getElementById('storeNameAr').innerText = s.company_name_ar || 'متجري';
+          document.getElementById('storeTaxInfo').innerText = `VAT: ${s.vat_number || 'N/A'} | CR: ${s.cr_number || 'N/A'}`;
+          document.getElementById('storeAddress').innerText = `${s.building_no || ''} ${s.street_en || ''}, ${s.district_en || ''}, ${s.city_en || 'Saudi Arabia'}`;
+          document.getElementById('bankName').innerText = s.bank_name || 'Bank Account';
+          document.getElementById('storeIban').innerText = s.iban || 'N/A';
+          if (s.store_seal_img) {
+            document.getElementById('sealWrap').innerHTML = `<img class="stamp-img" src="${s.store_seal_img}">`;
+          }
+        }
+      } catch(e) {}
+
+      // 2. Load Party & Ledger
+      if (!partyId) return;
+      try {
+        const lRes = await fetch(`/api/parties/${partyId}/ledger?from=${from}&to=${to}`);
+        const lJson = await lRes.json();
+        if (lJson.success) {
+          const p = lJson.party;
+          document.getElementById('partyName').innerText = `${p.name_en} (${p.name_ar || ''})`;
+          document.getElementById('partyPhone').innerText = p.phone || 'N/A';
+          document.getElementById('partyVat').innerText = p.vat_number || 'N/A';
+          document.getElementById('partyAddr').innerText = `${p.building_no || ''} ${p.street_en || ''}, ${p.city_en || ''}`;
+          document.getElementById('partyNetBal').innerText = (parseFloat(p.current_balance) || 0).toFixed(2) + ' SAR';
+
+          const tbody = document.getElementById('ledgerRows');
+          tbody.innerHTML = '';
+          lJson.entries.forEach(e => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${e.entry_date}</td>
+              <td><b>${e.reference_no || '—'}</b></td>
+              <td>${e.description || e.entry_type} ${e.payment_mode ? '(' + e.payment_mode + ')' : ''}</td>
+              <td style="text-align: right;" class="text-red">${e.debit > 0 ? e.debit.toFixed(2) : '—'}</td>
+              <td style="text-align: right;" class="text-green">${e.credit > 0 ? e.credit.toFixed(2) : '—'}</td>
+              <td style="text-align: right; font-weight: bold;">${e.balance_after.toFixed(2)}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      } catch(e) {}
+    }
+    window.onload = loadData;
+  </script>
+</body>
+</html>

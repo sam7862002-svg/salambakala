@@ -1,0 +1,18 @@
+*PURCHASE VOUCHER / سند استلام مشتريات*
+*{{STORE_NAME}}*
+--------------------------------
+Voucher No: *{{PURCHASE_NO}}*
+Supplier Bill No: *{{SUPPLIER_INV_NO}}*
+Date: {{DATE}}
+Supplier: *{{VENDOR_NAME}}*
+--------------------------------
+{{ITEMS_SUMMARY}}
+--------------------------------
+Subtotal: {{SUBTOTAL}} SAR
+VAT (15%): {{VAT_AMOUNT}} SAR
+*Total: {{TOTAL_AMOUNT}} SAR*
+Paid at Inward: {{PAID_COUNTER}} SAR
+Credited to Account: {{CREDITED_AMOUNT}} SAR
+*Current Net Payable: {{CURRENT_BALANCE}} SAR*
+--------------------------------
+Goods received & stock updated.

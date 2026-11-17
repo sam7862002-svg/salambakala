@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Purchase & Return Management</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #0b1329; color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto; }
+    
+    .pos-topbar { background: #1e1b4b; border-bottom: 2px solid #3730a3; padding: 8px 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; position: sticky; top: 0; z-index: 100; transition: background 0.3s; }
+    .cart-panel, .checkout-panel { background: #131d3d; border-radius: 8px; border: 1px solid #2e3860; }
+    
+    .universal-input { background: #080e21; border: 2px solid #6366f1; border-radius: 6px; padding: 8px 12px; color: #fff; font-size: 13.5px; font-weight: bold; width: 100%; }
+    .universal-input:focus { outline: none; box-shadow: 0 0 8px rgba(99, 102, 241, 0.4); }
+    .net-total-val { font-size: 24px; font-weight: 900; color: #818cf8; }
+    .return-banner { display: none; background: #c2410c; color: #fff; text-align: center; font-size: 12px; font-weight: 900; padding: 6px; }
+
+    /* Return Mode Theme */
+    body.return-theme { background-color: #240c06; }
+    body.return-theme .pos-topbar { background: #431407; border-bottom-color: #ea580c; }
+    body.return-theme .cart-panel, body.return-theme .checkout-panel { background: #35140b; border-color: #f97316; }
+    body.return-theme .universal-input { border-color: #f97316; }
+    body.return-theme .net-total-val { color: #fb923c; }
+    body.return-theme .return-banner { display: block; }
+    body.return-theme .btn-a4 { background: #c2410c; }
+    body.return-theme .btn-thermal { background: #9a3412; }
+    body.return-theme .btn-save { background: #7c2d12; }
+
+    .brand-wrap { display: flex; align-items: center; gap: 8px; }
+    .brand-wrap h2 { font-size: 17px; color: #818cf8; font-weight: 800; }
+    body.return-theme .brand-wrap h2 { color: #fb923c; }
+    
+    .mode-toggle { display: flex; background: #080e21; border-radius: 4px; padding: 2px; border: 1px solid #475569; }
+    .mode-btn { border: none; padding: 5px 12px; font-size: 11.5px; font-weight: bold; border-radius: 3px; cursor: pointer; color: #94a3b8; background: transparent; }
+    .mode-btn.active-pur { background: #4f46e5; color: #fff; }
+    .mode-btn.active-return { background: #ea580c; color: #fff; }
+
+    .top-controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .btn-top {
+      background: #252e50; color: #f8fafc; border: 1px solid #3d4a78; padding: 5px 10px;
+      border-radius: 5px; font-size: 11.5px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .btn-top:hover { background: #374370; }
+
+    .pos-layout { flex: 1; display: grid; grid-template-columns: 1fr 370px; gap: 10px; padding: 10px; min-height: 0; }
+    @media (max-width: 950px) { .pos-layout { grid-template-columns: 1fr; } }
+
+    .universal-search-wrap { padding: 10px; border-bottom: 1px solid #2e3860; display: flex; gap: 8px; position: relative; }
+    .search-suggestions {
+      position: absolute; top: 100%; left: 10px; right: 90px; background: #080e21;
+      border: 1px solid #6366f1; border-radius: 6px; max-height: 250px; overflow-y: auto;
+      z-index: 100; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none;
+    }
+    .suggestion-row { padding: 8px 12px; border-bottom: 1px solid #1c264a; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+    .suggestion-row:hover, .suggestion-row.highlighted { background: #4f46e5; color: #fff; }
+
+    .cart-table-wrap { overflow-y: auto; max-height: calc(100vh - 170px); min-height: 250px; }
+    table.cart-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+    table.cart-table th { background: #080e21; color: #94a3b8; font-weight: 600; padding: 8px; position: sticky; top: 0; z-index: 5; }
+    table.cart-table td { padding: 6px 8px; border-bottom: 1px solid #2e3860; vertical-align: middle; }
+
+    .table-input {
+      background: #080e21; border: 1px solid #475569; color: #fff; border-radius: 4px;
+      padding: 4px 6px; width: 70px; font-size: 12px; font-weight: bold; text-align: center;
+    }
+    .cipher-code { color: #818cf8; font-family: monospace; font-size: 11px; margin-left: 4px; }
+
+    .checkout-panel { display: flex; flex-direction: column; gap: 8px; padding: 10px; overflow-y: auto; max-height: calc(100vh - 85px); }
+    .customer-box { background: #080e21; border: 1px solid #2e3860; border-radius: 6px; padding: 8px; position: relative; }
+    .customer-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 10.5px; color: #94a3b8; font-weight: bold; }
+    .cust-search-res { position: absolute; top: 100%; left: 0; right: 0; background: #080e21; border: 1px solid #6366f1; border-radius: 6px; max-height: 200px; overflow-y: auto; z-index: 100; display: none; }
+    .cust-row { padding: 7px 10px; font-size: 11.5px; border-bottom: 1px solid #1c264a; cursor: pointer; }
+    .cust-row:hover, .cust-row.highlighted { background: #4f46e5; color: #fff; }
+    
+    .cust-bal-wrap { display: none; margin-top: 5px; padding: 5px 8px; border-radius: 5px; background: #450a0a; border: 1px solid #dc2626; justify-content: space-between; align-items: center; }
+    .cust-bal-text { font-size: 11.5px; font-weight: bold; color: #fca5a5; }
+    .btn-receipt-voucher { background: #16a34a; border: none; color: #fff; padding: 3px 8px; border-radius: 3px; font-size: 10.5px; font-weight: bold; cursor: pointer; }
+
+    .totals-box { background: #080e21; border: 1px solid #2e3860; border-radius: 6px; padding: 8px 10px; }
+    .totals-line { display: flex; justify-content: space-between; font-size: 12px; color: #94a3b8; margin-bottom: 3px; }
+    .net-total-line { display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #2e3860; padding-top: 5px; margin-top: 4px; }
+    .net-total-line span { font-size: 13px; font-weight: 700; color: #f8fafc; }
+
+    .pay-methods-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+    .pay-btn { background: #080e21; border: 1px solid #475569; color: #cbd5e1; padding: 6px 3px; border-radius: 5px; font-size: 10.5px; font-weight: bold; cursor: pointer; text-align: center; }
+    .pay-btn.active { background: #4f46e5; color: #fff; border-color: #818cf8; }
+
+    .pay-fields-box { background: #080e21; border: 1px solid #2e3860; border-radius: 6px; padding: 6px 8px; font-size: 11px; }
+    .pay-fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+    .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px; }
+    .btn-checkout { border: none; border-radius: 6px; padding: 10px 6px; font-size: 12px; font-weight: 800; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+    .btn-a4 { background: #4f46e5; color: #fff; }
+    .btn-thermal { background: #3730a3; color: #fff; }
+    .btn-save { background: #16a34a; color: #fff; }
+    .btn-wa { background: #059669; color: #fff; }
+
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 1000; justify-content: center; align-items: center; }
+    .modal-box { background: #131d3d; border: 1px solid #475569; border-radius: 8px; padding: 16px; width: 95%; max-width: 600px; max-height: 88vh; overflow-y: auto; color: #fff; }
+    .modal-box h3 { margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #2e3860; color: #818cf8; font-size: 15px; }
+    .form-group { margin-bottom: 8px; }
+    .form-group label { display: block; font-size: 11px; color: #94a3b8; font-weight: 600; margin-bottom: 2px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  </style>
+</head>
+<body>
+
+  <div class="return-banner" id="returnBannerText">⚠️ PURCHASE RETURN / DEBIT NOTE MODE (مرتجع مشتريات - إشعار مدين)</div>
+
+  <div class="pos-topbar">
+    <div class="brand-wrap">
+      <h2 id="screenTitle">📦 PURCHASE</h2>
+      <div class="mode-toggle">
+        <button class="mode-btn active-pur" id="btnModePur" onclick="setPurMode('purchase')">🔵 Purchase</button>
+        <button class="mode-btn" id="btnModeReturn" onclick="setPurMode('return')">🟠 Return</button>
+      </div>
+    </div>
+
+    <div class="top-controls">
+      <input type="text" id="suppInvoiceNoInput" class="btn-top" style="padding: 5px 8px; width: 140px; font-weight:bold;" placeholder="Supp Inv No *">
+      <input type="date" id="purInvoiceDate" class="btn-top" style="padding: 5px 8px;">
+      <button class="btn-top" style="background:#4338ca;" onclick="openRecentPurchasesModal()">📋 Past Bills</button>
+      <button class="btn-top" style="background:#0284c7; border-color:#38bdf8;" onclick="openQuickItemModal()">➕ Item</button>
+      <button class="btn-top" style="background:#059669; border-color:#34d399;" onclick="openQuickVendorModal()">➕ Vendor</button>
+      <a href="pos.html" class="btn-top" style="background: #38bdf8; color: #0f172a; font-weight: bold;">⚡ POS</a>
+      <a href="index.html" id="dashboardBtn" class="btn-top" style="background: #e2e8f0; color: #0f172a; font-weight: bold;">🏠 Dashboard</a>
+    </div>
+  </div>
+
+  <div class="pos-layout">
+    
+    <div class="cart-panel">
+      <div class="universal-search-wrap">
+        <input type="text" id="universalSearchInput" class="universal-input"
+               placeholder="🔍 Scan Barcode OR Type Name / PLU (Use ↑ ↓ Enter)..."
+               autofocus
+               onkeydown="handleUniversalKeyDown(event)"
+               oninput="handleUniversalInput(this.value)">
+        <div id="itemSearchDropdown" class="search-suggestions"></div>
+        <button class="btn-top" style="background: #dc2626; border-color: #ef4444; font-weight:bold;" onclick="fullPurReset()">🗑️ Clear</button>
+      </div>
+
+      <div class="cart-table-wrap">
+        <table class="cart-table">
+          <thead>
+            <tr>
+              <th width="25">#</th>
+              <th>Description</th>
+              <th width="75">Qty</th>
+              <th width="85">Cost (Excl VAT)</th>
+              <th width="80">Sell</th>
+              <th width="85" style="text-align: right;">Total (+15%)</th>
+              <th width="30"></th>
+            </tr>
+          </thead>
+          <tbody id="cartTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="checkout-panel">
+      <div class="customer-box">
+        <div class="customer-title-row">
+          <span>SUPPLIER / VENDOR</span>
+          <span id="vendorTypeBadge" style="color: #818cf8;">CASH</span>
+        </div>
+        
+        <input type="text" id="vendorSearchInput" class="universal-input"
+               style="font-size: 12px; padding: 6px 8px;"
+               value="LOCAL CASH VENDOR (نقدي)"
+               onfocus="this.select(); showVendorDropdown();"
+               onclick="this.select(); showVendorDropdown();"
+               onkeydown="handleVendorKeyDown(event)"
+               oninput="handleVendorSearch(this.value)">
+        <div id="vendorSearchDropdown" class="cust-search-res"></div>
+        
+        <div id="vendorBalWrap" class="cust-bal-wrap">
+          <span class="cust-bal-text">Due: <span id="vendorBalVal">0.00</span> SAR</span>
+          <button class="btn-receipt-voucher" onclick="openDirectPaymentModal()">💸 Quick Pay</button>
+        </div>
+      </div>
+
+      <div class="totals-box">
+        <div class="totals-line"><span>Subtotal (Excl. VAT):</span><span id="dispSubtotal">0.00 SAR</span></div>
+        <div class="totals-line"><span>VAT (15%):</span><span id="dispVat">0.00 SAR</span></div>
+        <div class="net-total-line">
+          <span id="labelTotal">TOTAL:</span>
+          <b class="net-total-val" id="dispNetTotal">0.00 SAR</b>
+        </div>
+      </div>
+
+      <div class="pay-methods-grid">
+        <button class="pay-btn active" id="btnPayCash" onclick="setPayMethod('CASH')">Cash</button>
+        <button class="pay-btn" id="btnPayBank" onclick="setPayMethod('BANK')">Bank</button>
+        <button class="pay-btn" id="btnPaySplit" onclick="setPayMethod('SPLIT')">Split</button>
+        <button class="pay-btn" id="btnPayCredit" onclick="setPayMethod('CREDIT')">Credit</button>
+      </div>
+
+      <div class="pay-fields-box" id="payFieldsBox">
+        <div id="cashFieldsWrap">
+          <div class="pay-fields-row">
+            <div>
+              <label style="color:#94a3b8; font-size:9.5px;">Amount Paid</label>
+              <input type="number" step="0.01" id="inputCashPaid" class="universal-input" style="padding:4px; font-size:12px;">
+            </div>
+            <div style="font-size:10px; color:#4ade80; display:flex; align-items:center; padding-top:10px;">
+              ✓ Direct Cash
+            </div>
+          </div>
+        </div>
+
+        <div id="splitFieldsWrap" style="display: none;">
+          <div class="pay-fields-row">
+            <div>
+              <label style="color:#94a3b8; font-size:9.5px;">Cash</label>
+              <input type="number" step="0.01" id="inputSplitCash" class="universal-input" style="padding:4px; font-size:12px;">
+            </div>
+            <div>
+              <label style="color:#94a3b8; font-size:9.5px;">Bank</label>
+              <input type="number" step="0.01" id="inputSplitBank" class="universal-input" style="padding:4px; font-size:12px;">
+            </div>
+          </div>
+        </div>
+
+        <div id="creditFieldsWrap" style="display: none;">
+          <div class="pay-fields-row">
+            <div>
+              <label style="color:#94a3b8; font-size:9.5px;">Paid Cash</label>
+              <input type="number" step="0.01" id="inputCreditCounterPaid" class="universal-input" value="0.00" style="padding:4px; font-size:12px;" oninput="updateCreditCharged()">
+            </div>
+            <div>
+              <label style="color:#94a3b8; font-size:9.5px;">Paid Bank</label>
+              <input type="number" step="0.01" id="inputCreditBankPaid" class="universal-input" value="0.00" style="padding:4px; font-size:12px;" oninput="updateCreditCharged()">
+            </div>
+          </div>
+          <div style="margin-top:3px; font-size:10.5px; color:#fca5a5;">
+            Balance Impact: <b id="dispChargedToAccount">0.00 SAR</b>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions-grid">
+        <button class="btn-checkout btn-a4" onclick="executeCheckout('a4')">
+          <span id="btnTextA4">📄 Purchase (A4)</span>
+          <small style="opacity: 0.85; font-size:9.5px;">Standard Print</small>
+        </button>
+
+        <button class="btn-checkout btn-thermal" onclick="executeCheckout('thermal')">
+          <span id="btnTextThermal">🖨️ Slip (80mm)</span>
+          <small style="opacity: 0.85; font-size:9.5px;">Thermal Print</small>
+        </button>
+
+        <button class="btn-checkout btn-save" onclick="executeCheckout('save')">
+          <span>💾 Save Only</span>
+          <small style="opacity: 0.85; font-size:9.5px;">Stock Ledger</small>
+        </button>
+
+        <button class="btn-checkout btn-wa" onclick="executeCheckout('whatsapp')">
+          <span>📲 WhatsApp</span>
+          <small style="opacity: 0.85; font-size:9.5px;">Share Voucher</small>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="recentPurModal" class="modal">
+    <div class="modal-box" style="max-width: 700px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h3>📋 Purchase History & Return Selector</h3>
+        <button onclick="closeModal('recentPurModal')" style="border:none; background:none; color:#fff; font-size:22px; cursor:pointer;">&times;</button>
+      </div>
+      
+      <div style="margin-bottom: 10px;">
+        <input type="text" id="recentSearchInput" class="universal-input"
+               placeholder="🔍 Search by Voucher No (PUR-...), Supplier Bill No, or Vendor Name..."
+               oninput="filterRecentPurchases(this.value)">
+      </div>
+
+      <div style="max-height: 55vh; overflow-y: auto;">
+        <table style="width:100%; border-collapse:collapse; font-size:11.5px;">
+          <thead>
+            <tr style="background:#080e21; text-align:left; position:sticky; top:0;">
+              <th style="padding:6px;">Voucher No</th>
+              <th>Supp Bill</th>
+              <th>Vendor</th>
+              <th>Total (SAR)</th>
+              <th style="text-align:center;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="recentPurchasesBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="quickVendorModal" class="modal">
+    <div class="modal-box">
+      <h3>➕ Add Full Supplier / Vendor Profile</h3>
+      <form id="quickVendorForm" onsubmit="submitQuickVendor(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Vendor Type *</label>
+            <select id="qv_type" class="universal-input">
+              <option value="credit">Credit / آجل (Pay Later)</option>
+              <option value="cash">Cash / نقدي (Immediate)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Mobile Number *</label>
+            <input type="text" id="qv_phone" required class="universal-input" placeholder="05xxxxxxxx">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Vendor Name (English) *</label>
+            <input type="text" id="qv_name_en" required class="universal-input" placeholder="AL MARAI COMPANY">
+          </div>
+          <div class="form-group">
+            <label>Vendor Name (Arabic) / الاسم بالعربي</label>
+            <input type="text" id="qv_name_ar" class="universal-input" style="direction:rtl;" placeholder="شركة المراعي">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>15-Digit VAT Number / الرقم الضريبي</label>
+            <input type="text" id="qv_vat" maxlength="15" class="universal-input" placeholder="300000000000003">
+          </div>
+          <div class="form-group">
+            <label>CR Number / السجل التجاري</label>
+            <input type="text" id="qv_cr" class="universal-input" placeholder="1010xxxxxx">
+          </div>
+        </div>
+
+        <div class="form-row-3">
+          <div class="form-group">
+            <label>Building No</label>
+            <input type="text" id="qv_bldg" class="universal-input" placeholder="1234">
+          </div>
+          <div class="form-group">
+            <label>Street</label>
+            <input type="text" id="qv_street" class="universal-input" placeholder="King Fahd Rd">
+          </div>
+          <div class="form-group">
+            <label>District</label>
+            <input type="text" id="qv_district" class="universal-input" placeholder="Al Olaya">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>City</label>
+            <input type="text" id="qv_city" class="universal-input" value="Riyadh">
+          </div>
+          <div class="form-group">
+            <label>Opening Balance (SAR)</label>
+            <input type="number" step="0.01" id="qv_opening_bal" class="universal-input" value="0.00">
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:12px;">
+          <button type="button" class="btn-top" onclick="closeModal('quickVendorModal')">Cancel</button>
+          <button type="submit" class="btn-top" style="background:#16a34a; border-color:#22c55e;">Save Vendor</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="quickItemModal" class="modal">
+    <div class="modal-box" style="max-width: 460px;">
+      <h3>➕ Quick Add Product (Auto Arabic Translate)</h3>
+      <form id="quickProductForm" onsubmit="submitQuickProduct(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Barcode *</label>
+            <input type="text" id="qp_barcode" required class="universal-input">
+          </div>
+          <div class="form-group">
+            <label>PLU Code</label>
+            <input type="text" id="qp_item_code" class="universal-input" placeholder="Optional PLU">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Product Name (English) * <small style="color:#818cf8;">(Auto-translates to Arabic)</small></label>
+          <input type="text" id="qp_name_en" required class="universal-input"
+                 placeholder="Type English name..."
+                 oninput="handleAutoTranslate(this.value)">
+        </div>
+
+        <div class="form-group">
+          <label>Product Name (Arabic) / الاسم بالعربي</label>
+          <input type="text" id="qp_name_ar" class="universal-input" style="direction:rtl;" placeholder="الاسم بالعربي يظهر هنا">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Cost Price (Excl. VAT) *</label>
+            <input type="number" step="0.01" id="qp_cost" required class="universal-input" placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label>Selling Price (Incl. VAT) *</label>
+            <input type="number" step="0.01" id="qp_sell" required class="universal-input" placeholder="0.00">
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:12px;">
+          <button type="button" class="btn-top" onclick="closeModal('quickItemModal')">Cancel</button>
+          <button type="submit" class="btn-top" style="background:#16a34a; border-color:#22c55e;">Save Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="directPaymentModal" class="modal">
+    <div class="modal-box" style="max-width: 400px;">
+      <h3>💸 Quick Payment Voucher</h3>
+      <div class="form-group">
+        <label>Vendor:</label>
+        <b id="dp_vendor_name" style="color: #818cf8; font-size: 13px;"></b>
+      </div>
+      <div class="form-group">
+        <label>Payable Due:</label>
+        <span id="dp_vendor_bal" style="font-size: 15px; font-weight: bold; color: #f87171;"></span> SAR
+      </div>
+      <div class="form-row" style="margin-top: 8px;">
+        <div class="form-group">
+          <label style="color:#4ade80;">💵 Cash (SAR)</label>
+          <input type="number" step="0.01" id="dp_cash_amt" class="universal-input" placeholder="0.00" onfocus="this.select()">
+        </div>
+        <div class="form-group">
+          <label style="color:#818cf8;">💳 Bank (SAR)</label>
+          <input type="number" step="0.01" id="dp_bank_amt" class="universal-input" placeholder="0.00" onfocus="this.select()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="dp_date" class="universal-input">
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <input type="text" id="dp_notes" class="universal-input" placeholder="Reference">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 12px;">
+        <button type="button" class="btn-top" onclick="closeModal('directPaymentModal')">Cancel</button>
+        <button type="button" class="btn-top" style="background:#16a34a; border-color:#22c55e;" onclick="submitDirectPayment()">Save Payment</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function getApiBase() {
+      var role = localStorage.getItem('pos_machine_role') || 'server';
+      var ip = localStorage.getItem('pos_server_ip') || '';
+      var port = window.location.port || '6060';
+      if (role === 'terminal' && ip) {
+        return 'http://' + ip + ':' + port;
+      }
+      return '';
+    }
+    const DEFAULT_CASH_VENDOR_ID = 147;
+
+    let purMode = 'purchase';
+    let returnRefNo = null;
+    let productsList = [];
+    let vendorsList = [];
+    let cart = [];
+    let activeVendor = null;
+    let selectedPayMethod = 'CASH';
+    let storeCipherKey = 'COMPUTERSX';
+    let terminalConfig = { terminalId: '1', printerType: 'thermal', printerName: '' };
+    
+    let currentProductHighlight = -1;
+    let currentFilteredProducts = [];
+
+    let currentVendorHighlight = -1;
+    let currentFilteredVendors = [];
+    let translateTimer = null;
+    let recentSearchTimer = null;
+
+    async function loadTerminalConfig() {
+      try {
+        if (window.require) {
+          const { ipcRenderer } = window.require('electron');
+          const cfg = await ipcRenderer.invoke('get-config');
+          if (cfg) {
+            terminalConfig.terminalId = cfg.terminalId || '1';
+            terminalConfig.printerType = cfg.printerType || 'thermal';
+            terminalConfig.printerName = cfg.printerName || '';
+            
+            const dashBtn = document.getElementById('dashboardBtn');
+            if (dashBtn) dashBtn.style.display = 'inline-flex';
+          }
+        }
+      } catch (e) {}
+    }
+
+    window.onload = async () => {
+      await loadTerminalConfig();
+      document.getElementById('purInvoiceDate').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('dp_date').value = new Date().toISOString().slice(0, 10);
+      await loadStoreSettings();
+      await loadProducts();
+      await loadVendors();
+      document.getElementById('universalSearchInput').focus();
+    };
+
+    async function loadStoreSettings() {
+      try {
+        const res = await fetch(getApiBase() + '/api/settings');
+        const j = await res.json();
+        if (j.success && j.data && j.data.cost_cipher_key) storeCipherKey = j.data.cost_cipher_key;
+      } catch (e) {}
+    }
+
+    function encodeCost(costVal) {
+      if (!costVal || costVal <= 0) return '';
+      const cleanKey = (storeCipherKey || 'COMPUTERSX').toUpperCase();
+      function mapDigit(d) {
+        if (d === '0') return cleanKey[9] || 'X';
+        const n = parseInt(d, 10);
+        return cleanKey[n - 1] || d;
+      }
+      const formatted = parseFloat(costVal).toFixed(2);
+      let numStr = formatted.endsWith('.00') ? String(parseInt(costVal, 10)) : formatted.replace('.', '');
+      return numStr.split('').map(mapDigit).join('');
+    }
+
+    async function loadProducts() {
+      try {
+        const res = await fetch(getApiBase() + '/api/products');
+        const j = await res.json();
+        if (j.success) productsList = j.data;
+      } catch (e) {}
+    }
+
+    async function loadVendors() {
+      try {
+        const res = await fetch(getApiBase() + '/api/parties?type=vendor');
+        const j = await res.json();
+        if (j.success) vendorsList = j.data;
+      } catch (e) {}
+    }
+
+    function setPurMode(mode) {
+      purMode = mode;
+      const isRet = mode === 'return';
+      if (isRet) {
+        document.body.classList.add('return-theme');
+        document.getElementById('btnModePur').className = 'mode-btn';
+        document.getElementById('btnModeReturn').className = 'mode-btn active-return';
+        document.getElementById('screenTitle').innerText = '🟠 RETURN';
+        document.getElementById('btnTextA4').innerText = '📄 Debit Note (A4)';
+        document.getElementById('btnTextThermal').innerText = '🖨️ Ret Slip (80mm)';
+        document.getElementById('labelTotal').innerText = 'RETURN TOTAL:';
+      } else {
+        document.body.classList.remove('return-theme');
+        document.getElementById('btnModePur').className = 'mode-btn active-pur';
+        document.getElementById('btnModeReturn').className = 'mode-btn';
+        document.getElementById('screenTitle').innerText = '📦 PURCHASE';
+        document.getElementById('btnTextA4').innerText = '📄 Purchase (A4)';
+        document.getElementById('btnTextThermal').innerText = '🖨️ Slip (80mm)';
+        document.getElementById('labelTotal').innerText = 'TOTAL:';
+      }
+      renderCart();
+    }
+
+    function handleAutoTranslate(val) {
+      clearTimeout(translateTimer);
+      if (!val || val.trim().length < 2) return;
+      translateTimer = setTimeout(async () => {
+        try {
+          const res = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ar&dt=t&q=' + encodeURIComponent(val));
+          const json = await res.json();
+          if (json && json[0] && json[0][0] && json[0][0][0]) {
+            document.getElementById('qp_name_ar').value = json[0][0][0];
+          }
+        } catch (e) {}
+      }, 400);
+    }
+
+    function handleUniversalKeyDown(e) {
+      const dd = document.getElementById('itemSearchDropdown');
+      const isDropdownVisible = (dd.style.display === 'block') && currentFilteredProducts.length > 0;
+
+      if (e.key === 'ArrowDown') {
+        if (isDropdownVisible) {
+          e.preventDefault();
+          currentProductHighlight++;
+          if (currentProductHighlight >= currentFilteredProducts.length) {
+            currentProductHighlight = 0;
+          }
+          updateProductHighlight();
+        }
+      } else if (e.key === 'ArrowUp') {
+        if (isDropdownVisible) {
+          e.preventDefault();
+          currentProductHighlight--;
+          if (currentProductHighlight < 0) {
+            currentProductHighlight = currentFilteredProducts.length - 1;
+          }
+          updateProductHighlight();
+        }
+      } else if (e.key === 'Enter') {
+        if (isDropdownVisible && currentProductHighlight >= 0 && currentProductHighlight < currentFilteredProducts.length) {
+          e.preventDefault();
+          addToCart(currentFilteredProducts[currentProductHighlight]);
+          e.target.value = '';
+          dd.style.display = 'none';
+          currentProductHighlight = -1;
+          return;
+        }
+
+        const code = e.target.value.trim().toUpperCase();
+        if (!code) return;
+
+        const found = productsList.find(p => p.barcode1 === code || p.barcode2 === code || p.barcode3 === code || p.item_code === code);
+        if (found) {
+          addToCart(found);
+          e.target.value = '';
+          dd.style.display = 'none';
+        } else {
+          const matches = productsList.filter(p => p.name_en.includes(code) || (p.item_code && p.item_code === code));
+          if (matches.length === 1) {
+            addToCart(matches[0]);
+            e.target.value = '';
+            dd.style.display = 'none';
+          } else {
+            document.getElementById('qp_barcode').value = code;
+            document.getElementById('quickItemModal').style.display = 'flex';
+            document.getElementById('qp_name_en').focus();
+            e.target.value = '';
+            dd.style.display = 'none';
+          }
+        }
+      } else if (e.key === 'Escape') {
+        dd.style.display = 'none';
+        currentProductHighlight = -1;
+      }
+    }
+
+    function handleUniversalInput(query) {
+      const q = query.trim().toUpperCase();
+      const dd = document.getElementById('itemSearchDropdown');
+      if (!q) { dd.style.display = 'none'; currentFilteredProducts = []; return; }
+
+      currentFilteredProducts = productsList.filter(p => {
+        return p.name_en.includes(q) || (p.item_code && p.item_code.includes(q)) || (p.barcode1 && p.barcode1.includes(q));
+      }).slice(0, 15);
+
+      if (currentFilteredProducts.length === 0) { dd.style.display = 'none'; return; }
+
+      currentProductHighlight = 0;
+      dd.innerHTML = '';
+      currentFilteredProducts.forEach((p, idx) => {
+        const div = document.createElement('div');
+        div.className = 'suggestion-row' + (idx === 0 ? ' highlighted' : '');
+        div.id = 'prod_opt_' + idx;
+        div.innerHTML = `
+          <div><b>${p.name_en}</b> <small style="color:#818cf8;">PLU: ${p.item_code || '--'}</small></div>
+          <div><b style="color:#818cf8;">${p.cost_price.toFixed(2)} SAR</b></div>
+        `;
+        div.onclick = () => {
+          addToCart(p);
+          document.getElementById('universalSearchInput').value = '';
+          dd.style.display = 'none';
+          document.getElementById('universalSearchInput').focus();
+        };
+        dd.appendChild(div);
+      });
+      dd.style.display = 'block';
+      updateProductHighlight();
+    }
+
+    function updateProductHighlight() {
+      const rows = document.querySelectorAll('#itemSearchDropdown .suggestion-row');
+      rows.forEach((row, idx) => {
+        if (idx === currentProductHighlight) {
+          row.classList.add('highlighted');
+          row.scrollIntoView({ block: 'nearest' });
+        } else {
+          row.classList.remove('highlighted');
+        }
+      });
+    }
+
+    function addToCart(p, qty = 1) {
+      const existing = cart.find(item => item.product_id === p.id && p.id !== null);
+      if (existing) {
+        existing.quantity += qty;
+      } else {
+        cart.push({
+          product_id: p.id || null,
+          item_code: p.item_code || '',
+          barcode: p.barcode1 || p.barcode || '',
+          name_en: p.name_en,
+          name_ar: p.name_ar || '',
+          unit: p.unit || 'PCS',
+          cost_price: p.cost_price || 0,
+          selling_price: p.selling_price || 0,
+          quantity: qty,
+          cipher: encodeCost(p.cost_price)
+        });
+      }
+      renderCart();
+    }
+
+    function renderCart() {
+      const tbody = document.getElementById('cartTableBody');
+      tbody.innerHTML = '';
+
+      let subtotal = 0;
+      let totalVat = 0;
+      let grandTotal = 0;
+
+      cart.forEach((it, idx) => {
+        const lineBase = Math.round(it.quantity * it.cost_price * 100) / 100;
+        const lineVat = Math.round(lineBase * 0.15 * 100) / 100;
+        const lineTot = lineBase + lineVat;
+
+        it.line_total = lineTot;
+        subtotal += lineBase;
+        totalVat += lineVat;
+        grandTotal += lineTot;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td>
+            <b>${it.name_en}</b>
+            <span class="cipher-code">#${it.cipher}</span>
+          </td>
+          <td>
+            <input type="number" step="any" class="table-input" value="${it.quantity}"
+                   onfocus="this.select()" onchange="updateCartQty(${idx}, this.value)">
+          </td>
+          <td>
+            <input type="number" step="0.01" class="table-input" value="${it.cost_price.toFixed(2)}"
+                   title="Cost Excl. VAT"
+                   onfocus="this.select()" onchange="updateCartCost(${idx}, this.value)">
+          </td>
+          <td>
+            <input type="number" step="0.01" class="table-input" value="${it.selling_price.toFixed(2)}"
+                   onfocus="this.select()" onchange="updateCartSell(${idx}, this.value)">
+          </td>
+          <td style="text-align: right; font-weight: bold; color: ${purMode === 'return' ? '#fb923c' : '#818cf8'};">${lineTot.toFixed(2)}</td>
+          <td>
+            <button style="border:none; background:none; color:#f87171; font-size:16px; font-weight:bold; cursor:pointer;" title="Delete item" onclick="removeCartItem(${idx})">&times;</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('dispSubtotal').innerText = subtotal.toFixed(2) + ' SAR';
+      document.getElementById('dispVat').innerText = totalVat.toFixed(2) + ' SAR';
+      document.getElementById('dispNetTotal').innerText = grandTotal.toFixed(2) + ' SAR';
+
+      if (selectedPayMethod === 'CASH') {
+        document.getElementById('inputCashPaid').value = grandTotal > 0 ? grandTotal.toFixed(2) : '';
+      } else if (selectedPayMethod === 'CREDIT') {
+        updateCreditCharged();
+      }
+    }
+
+    function updateCartQty(idx, val) {
+      const n = parseFloat(val);
+      if (isNaN(n) || n <= 0) { removeCartItem(idx); return; }
+      cart[idx].quantity = n;
+      renderCart();
+    }
+
+    function updateCartCost(idx, val) {
+      const n = parseFloat(val);
+      if (isNaN(n) || n < 0) return;
+      cart[idx].cost_price = n;
+      cart[idx].cipher = encodeCost(n);
+      renderCart();
+    }
+
+    function updateCartSell(idx, val) {
+      const n = parseFloat(val);
+      if (isNaN(n) || n < 0) return;
+      cart[idx].selling_price = n;
+    }
+
+    function removeCartItem(idx) {
+      cart.splice(idx, 1);
+      renderCart();
+    }
+
+    function fullPurReset() {
+      cart = [];
+      returnRefNo = null;
+      activeVendor = null;
+      setPurMode('purchase');
+
+      document.getElementById('suppInvoiceNoInput').value = '';
+      document.getElementById('vendorSearchInput').value = 'LOCAL CASH VENDOR (نقدي)';
+      document.getElementById('vendorTypeBadge').innerText = 'CASH';
+      document.getElementById('vendorBalWrap').style.display = 'none';
+
+      setPayMethod('CASH');
+      document.getElementById('inputCashPaid').value = '';
+      document.getElementById('inputSplitCash').value = '';
+      document.getElementById('inputSplitBank').value = '';
+      document.getElementById('inputCreditCounterPaid').value = '0.00';
+      document.getElementById('inputCreditBankPaid').value = '0.00';
+      document.getElementById('dispChargedToAccount').innerText = '0.00 SAR';
+
+      renderCart();
+      document.getElementById('universalSearchInput').value = '';
+      document.getElementById('universalSearchInput').focus();
+    }
+
+    async function loadBillForReturn(purchaseId) {
+      try {
+        const res = await fetch(getApiBase() + `/api/purchases/${purchaseId}`);
+        const j = await res.json();
+        if (!j.success || !j.data) {
+          alert('Failed to load purchase record');
+          return;
+        }
+
+        const pur = j.data;
+        setPurMode('return');
+        returnRefNo = pur.purchase_no;
+
+        document.getElementById('suppInvoiceNoInput').value = 'RET-' + (pur.supplier_inv_no || pur.purchase_no);
+        document.getElementById('returnBannerText').innerText = `⚠️ RETURN FOR BILL: ${pur.purchase_no} (Supp: ${pur.supplier_inv_no || 'N/A'})`;
+
+        const matchedVendor = vendorsList.find(v => v.id === (pur.party_id || pur.vendor_id)) || {
+          id: pur.vendor_id || DEFAULT_CASH_VENDOR_ID,
+          name_en: pur.vendor_name || 'LOCAL CASH VENDOR',
+          sub_type: 'cash',
+          current_balance: 0
+        };
+        selectVendor(matchedVendor);
+
+        cart = (pur.items || []).map(it => {
+          const costVal = it.unit_cost !== undefined ? it.unit_cost : (it.cost_price || 0);
+          return {
+            product_id: it.product_id,
+            item_code: it.item_code || '',
+            barcode: it.barcode || '',
+            name_en: it.name_en,
+            name_ar: it.name_ar || '',
+            unit: it.unit || 'PCS',
+            cost_price: costVal,
+            selling_price: it.selling_price || 0,
+            quantity: it.quantity,
+            cipher: encodeCost(costVal)
+          };
+        });
+
+        renderCart();
+        closeModal('recentPurModal');
+        alert(`✅ Bill ${pur.purchase_no} loaded for return!`);
+      } catch (err) {
+        alert('Error loading bill: ' + err.message);
+      }
+    }
+
+    function filterRecentPurchases(term) {
+      clearTimeout(recentSearchTimer);
+      recentSearchTimer = setTimeout(() => {
+        openRecentPurchasesModal(term);
+      }, 300);
+    }
+
+    async function openRecentPurchasesModal(searchQuery = '') {
+      try {
+        const url = searchQuery ? `/api/purchases/recent?search=${encodeURIComponent(searchQuery)}` : '/api/purchases/recent';
+        const res = await fetch(getApiBase() + url);
+        const j = await res.json();
+        if (j.success) {
+          const tbody = document.getElementById('recentPurchasesBody');
+          tbody.innerHTML = '';
+          if (j.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px; color:#94a3b8;">No matching bills found</td></tr>';
+          } else {
+            j.data.forEach(pur => {
+              const tr = document.createElement('tr');
+              tr.style.borderBottom = '1px solid #2e3860';
+              const isRet = pur.is_return === 1;
+              tr.innerHTML = `
+                <td style="padding:6px;">
+                  <b style="color:${isRet ? '#fb923c' : '#818cf8'};">${isRet ? '🟠 ' : '🔵 '}${pur.purchase_no}</b><br>
+                  <small style="color:#94a3b8;">${pur.purchase_date}</small>
+                </td>
+                <td><b>${pur.supplier_inv_no || '--'}</b></td>
+                <td><b>${pur.vendor_name}</b></td>
+                <td><b>${pur.total_amount.toFixed(2)}</b></td>
+                <td style="display:flex; gap:3px; padding:6px 2px; justify-content:center;">
+                  <button class="btn-top" style="padding:3px 5px; font-size:10px;" onclick="reprintPurchase(${pur.id}, 'a4')">📄 A4</button>
+                  <button class="btn-top" style="padding:3px 5px; font-size:10px;" onclick="reprintPurchase(${pur.id}, '80mm')">🖨️ 80mm</button>
+                  <button class="btn-top" style="padding:3px 5px; font-size:10px; background:#059669;" onclick="handleWhatsAppSend(${pur.id})">📲 WA</button>
+                  <button class="btn-top" style="padding:3px 6px; font-size:10px; background:#ea580c; border-color:#f97316; font-weight:bold;"
+                          title="Load this bill for Return"
+                          onclick="loadBillForReturn(${pur.id})">🟠 Return</button>
+                </td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
+          document.getElementById('recentPurModal').style.display = 'flex';
+          if (!searchQuery) document.getElementById('recentSearchInput').focus();
+        }
+      } catch (e) {}
+    }
+
+    function showVendorDropdown() { handleVendorSearch(''); }
+
+    function handleVendorSearch(query) {
+      const q = query.trim().toUpperCase();
+      const dd = document.getElementById('vendorSearchDropdown');
+
+      currentFilteredVendors = vendorsList.filter(p => {
+        if (!q) return true;
+        return p.name_en.includes(q) || (p.phone && p.phone.includes(q));
+      }).slice(0, 15);
+
+      if (currentFilteredVendors.length === 0) { dd.style.display = 'none'; return; }
+
+      currentVendorHighlight = -1;
+      dd.innerHTML = '';
+      currentFilteredVendors.forEach((p, idx) => {
+        const div = document.createElement('div');
+        div.className = 'cust-row';
+        div.id = 'vendor_opt_' + idx;
+        div.innerHTML = `<b>${p.name_en}</b> <small>(${p.sub_type.toUpperCase()})</small> - Due: ${parseFloat(p.current_balance||0).toFixed(2)} SAR`;
+        div.onclick = () => { selectVendor(p); dd.style.display = 'none'; };
+        dd.appendChild(div);
+      });
+      dd.style.display = 'block';
+    }
+
+    function handleVendorKeyDown(e) {
+      const dd = document.getElementById('vendorSearchDropdown');
+      if (dd.style.display !== 'block' || currentFilteredVendors.length === 0) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        currentVendorHighlight = (currentVendorHighlight + 1) % currentFilteredVendors.length;
+        updateVendorHighlight();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        currentVendorHighlight = (currentVendorHighlight - 1 + currentFilteredVendors.length) % currentFilteredVendors.length;
+        updateVendorHighlight();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (currentVendorHighlight >= 0 && currentVendorHighlight < currentFilteredVendors.length) {
+          selectVendor(currentFilteredVendors[currentVendorHighlight]);
+          dd.style.display = 'none';
+        }
+      } else if (e.key === 'Escape') {
+        dd.style.display = 'none';
+      }
+    }
+
+    function updateVendorHighlight() {
+      document.querySelectorAll('#vendorSearchDropdown .cust-row').forEach((row, idx) => {
+        if (idx === currentVendorHighlight) {
+          row.classList.add('highlighted');
+          row.scrollIntoView({ block: 'nearest' });
+        } else {
+          row.classList.remove('highlighted');
+        }
+      });
+    }
+
+    function selectVendor(p) {
+      activeVendor = p;
+      document.getElementById('vendorSearchInput').value = p.name_en;
+      document.getElementById('vendorTypeBadge').innerText = p.sub_type.toUpperCase();
+
+      const balWrap = document.getElementById('vendorBalWrap');
+      if (p.sub_type === 'credit') {
+        balWrap.style.display = 'flex';
+        document.getElementById('vendorBalVal').innerText = (parseFloat(p.current_balance) || 0).toFixed(2);
+        setPayMethod('CREDIT');
+      } else {
+        balWrap.style.display = 'none';
+        setPayMethod('CASH');
+      }
+    }
+
+    function openDirectPaymentModal() {
+      if (!activeVendor) return;
+      document.getElementById('dp_vendor_name').innerText = activeVendor.name_en;
+      document.getElementById('dp_vendor_bal').innerText = (parseFloat(activeVendor.current_balance) || 0).toFixed(2);
+      document.getElementById('dp_cash_amt').value = '';
+      document.getElementById('dp_bank_amt').value = '';
+      document.getElementById('directPaymentModal').style.display = 'flex';
+      document.getElementById('dp_cash_amt').focus();
+    }
+
+    async function submitDirectPayment() {
+      if (!activeVendor) return;
+      const cashAmt = parseFloat(document.getElementById('dp_cash_amt').value) || 0;
+      const bankAmt = parseFloat(document.getElementById('dp_bank_amt').value) || 0;
+      const totalAmt = cashAmt + bankAmt;
+
+      if (totalAmt <= 0) { alert('Please enter Cash or Bank amount'); return; }
+
+      const payMode = (cashAmt > 0 && bankAmt > 0) ? 'SPLIT' : (bankAmt > 0 ? 'BANK' : 'CASH');
+      const desc = `Payment Voucher to Vendor (Cash: ${cashAmt.toFixed(2)}, Bank: ${bankAmt.toFixed(2)})`;
+
+      const payload = {
+        amount: totalAmt,
+        payment_mode: payMode,
+        entry_date: document.getElementById('dp_date').value,
+        description: document.getElementById('dp_notes').value ? (desc + ' - ' + document.getElementById('dp_notes').value) : desc
+      };
+
+      try {
+        const res = await fetch(getApiBase() + `/api/parties/${activeVendor.id}/payment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const j = await res.json();
+        if (j.success) {
+          alert('Payment recorded successfully!');
+          closeModal('directPaymentModal');
+          activeVendor.current_balance = j.data.newBalance;
+          document.getElementById('vendorBalVal').innerText = parseFloat(j.data.newBalance).toFixed(2);
+          await loadVendors();
+        } else {
+          alert('Error: ' + j.error);
+        }
+      } catch (err) { alert('Request failed'); }
+    }
+
+    function setPayMethod(method) {
+      selectedPayMethod = method;
+      document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('active'));
+      if (method === 'CASH') document.getElementById('btnPayCash').classList.add('active');
+      if (method === 'BANK') document.getElementById('btnPayBank').classList.add('active');
+      if (method === 'SPLIT') document.getElementById('btnPaySplit').classList.add('active');
+      if (method === 'CREDIT') document.getElementById('btnPayCredit').classList.add('active');
+
+      document.getElementById('cashFieldsWrap').style.display = method === 'CASH' ? 'block' : 'none';
+      document.getElementById('splitFieldsWrap').style.display = method === 'SPLIT' ? 'block' : 'none';
+      document.getElementById('creditFieldsWrap').style.display = method === 'CREDIT' ? 'block' : 'none';
+
+      if (method === 'CREDIT') updateCreditCharged();
+    }
+
+    function updateCreditCharged() {
+      let grandTotal = 0;
+      cart.forEach(it => {
+        const lineBase = Math.round(it.quantity * it.cost_price * 100) / 100;
+        grandTotal += (lineBase + Math.round(lineBase * 0.15 * 100) / 100);
+      });
+      const cashPaid = parseFloat(document.getElementById('inputCreditCounterPaid').value) || 0;
+      const bankPaid = parseFloat(document.getElementById('inputCreditBankPaid').value) || 0;
+      const charged = Math.max(0, grandTotal - (cashPaid + bankPaid));
+      document.getElementById('dispChargedToAccount').innerText = charged.toFixed(2) + ' SAR';
+    }
+
+    // പ്രിന്റ് ഫങ്ഷൻ സുരക്ഷിതമാക്കിയിരിക്കുന്നു
+    function sendPrintRequest(url, printerName, width = 420, height = 650) {
+      if (window.require) {
+        try {
+          const { ipcRenderer } = window.require('electron');
+          ipcRenderer.send('print-direct', { url, printerName });
+          return;
+        } catch (e) {
+          console.error('IPC Print Failed:', e);
+        }
+      }
+      const printWindow = window.open(url, '_blank', `width=${width},height=${height}`);
+      if (printWindow) {
+        setTimeout(() => { try { printWindow.print(); } catch(e) {} }, 1000);
+      }
+    }
+
+    async function executeCheckout(action) {
+      if (cart.length === 0) { alert('Cart is empty!'); return; }
+
+      const suppInvVal = (document.getElementById('suppInvoiceNoInput').value || '').trim();
+      if (!suppInvVal) {
+        alert('⚠️ ദയവായി സപ്ലയർ ഇൻവോയ്സ് നമ്പർ (Supplier Invoice No) നൽകുക!');
+        document.getElementById('suppInvoiceNoInput').focus();
+        document.getElementById('suppInvoiceNoInput').style.border = '2px solid #ef4444';
+        return;
+      }
+      document.getElementById('suppInvoiceNoInput').style.border = '1px solid #3d4a78';
+
+      let grandTotal = 0;
+      cart.forEach(it => {
+        const lineBase = Math.round(it.quantity * it.cost_price * 100) / 100;
+        grandTotal += (lineBase + Math.round(lineBase * 0.15 * 100) / 100);
+      });
+
+      let paidCash = 0;
+      let paidBank = 0;
+      let paidCredit = 0;
+
+      if (selectedPayMethod === 'CASH') {
+        paidCash = grandTotal;
+      } else if (selectedPayMethod === 'BANK') {
+        paidBank = grandTotal;
+      } else if (selectedPayMethod === 'SPLIT') {
+        paidCash = parseFloat(document.getElementById('inputSplitCash').value) || 0;
+        paidBank = parseFloat(document.getElementById('inputSplitBank').value) || 0;
+      } else if (selectedPayMethod === 'CREDIT') {
+        const cCash = parseFloat(document.getElementById('inputCreditCounterPaid').value) || 0;
+        const cBank = parseFloat(document.getElementById('inputCreditBankPaid').value) || 0;
+        paidCash = cCash;
+        paidBank = cBank;
+        paidCredit = Math.max(0, grandTotal - (cCash + cBank));
+      }
+
+      const vendorIdVal = activeVendor ? activeVendor.id : DEFAULT_CASH_VENDOR_ID;
+
+      const payload = {
+        terminal_id: terminalConfig.terminalId,
+        purchase_date: document.getElementById('purInvoiceDate').value,
+        supplier_inv_no: suppInvVal.toUpperCase(),
+        is_return: purMode === 'return' ? 1 : 0,
+        return_ref_no: returnRefNo,
+        party_id: vendorIdVal,
+        vendor_id: vendorIdVal,
+        vendor_name: activeVendor ? activeVendor.name_en : 'LOCAL CASH VENDOR',
+        vendor_phone: activeVendor ? activeVendor.phone : null,
+        vendor_vat: activeVendor ? activeVendor.vat_number : null,
+        vendor_cr: activeVendor ? activeVendor.cr_number : null,
+        payment_method: selectedPayMethod,
+        payment_mode: selectedPayMethod,
+        paid_cash: paidCash,
+        paid_bank: paidBank,
+        paid_credit: paidCredit,
+        items: cart
+      };
+
+      try {
+        const res = await fetch(getApiBase() + '/api/purchases', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const json = await res.json();
+        if (json.success) {
+          const purId = json.data.purchaseId;
+          const targetPrinter = terminalConfig.printerName || '';
+          const apiPrefix = getApiBase() ? getApiBase() : window.location.origin;
+
+          if (action === 'a4') {
+            const url = `${apiPrefix}/templates/purchase_a4.html?id=${purId}&autoprint=1&printer=${encodeURIComponent(targetPrinter)}`;
+            sendPrintRequest(url, targetPrinter, 850, 950);
+          } else if (action === 'thermal') {
+            const url = `${apiPrefix}/templates/purchase_80mm.html?id=${purId}&autoprint=1&printer=${encodeURIComponent(targetPrinter)}`;
+            sendPrintRequest(url, targetPrinter, 420, 650);
+          } else if (action === 'whatsapp') {
+            await handleWhatsAppSend(purId);
+          }
+        } else {
+          alert('Save error: ' + (json.error || 'Server error'));
+        }
+      } catch (err) {
+        alert('Request error: ' + err.message);
+      }
+
+      // തടസ്സമില്ലാതെ അടുത്ത ബില്ലിലേക്ക് പോകുന്നതിനായി ഫുൾ റസെറ്റ് കൃത്യമായി റൺ ചെയ്യുന്നു
+      fullPurReset();
+      await loadProducts();
+      await loadVendors();
+    }
+
+    function reprintPurchase(purId, format) {
+      const apiPrefix = getApiBase() ? getApiBase() : window.location.origin;
+      const targetPrinter = terminalConfig.printerName || '';
+
+      if (format === 'a4') {
+        const url = `${apiPrefix}/templates/purchase_a4.html?id=${purId}&autoprint=1&printer=${encodeURIComponent(targetPrinter)}`;
+        sendPrintRequest(url, targetPrinter, 850, 950);
+      } else if (format === '80mm') {
+        const url = `${apiPrefix}/templates/purchase_80mm.html?id=${purId}&autoprint=1&printer=${encodeURIComponent(targetPrinter)}`;
+        sendPrintRequest(url, targetPrinter, 420, 650);
+      }
+    }
+
+    async function handleWhatsAppSend(purId) {
+      try {
+        const res = await fetch(getApiBase() + `/api/purchases/${purId}/whatsapp-text`);
+        const json = await res.json();
+        if (json.success) {
+          let phone = json.phone ? json.phone.replace(/\D/g, '') : '';
+          let waUrl = '';
+          if (phone) {
+            if (phone.startsWith('05')) phone = '966' + phone.substring(1);
+            else if (phone.startsWith('5')) phone = '966' + phone;
+            waUrl = `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(json.text)}`;
+          } else {
+            waUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(json.text)}`;
+          }
+          window.open(waUrl, '_blank');
+        }
+      } catch (e) { alert('WhatsApp preparation failed'); }
+    }
+
+    async function submitQuickProduct(e) {
+      e.preventDefault();
+      const payload = {
+        barcode1: document.getElementById('qp_barcode').value.trim().toUpperCase(),
+        item_code: document.getElementById('qp_item_code').value.trim().toUpperCase() || null,
+        name_en: document.getElementById('qp_name_en').value.trim().toUpperCase(),
+        name_ar: document.getElementById('qp_name_ar').value.trim(),
+        cost_price: parseFloat(document.getElementById('qp_cost').value) || 0,
+        selling_price: parseFloat(document.getElementById('qp_sell').value) || 0,
+        unit: 'PCS',
+        stock_quantity: 0,
+        vat_rate: 15.00
+      };
+
+      const res = await fetch(getApiBase() + '/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const j = await res.json();
+      if (j.success) {
+        payload.id = j.id;
+        productsList.push(payload);
+        addToCart(payload);
+        closeModal('quickItemModal');
+        document.getElementById('quickProductForm').reset();
+        document.getElementById('universalSearchInput').focus();
+      } else { alert('Error: ' + j.error); }
+    }
+
+    async function submitQuickVendor(e) {
+      e.preventDefault();
+      const payload = {
+        party_type: 'vendor',
+        sub_type: document.getElementById('qv_type').value,
+        name_en: document.getElementById('qv_name_en').value.trim().toUpperCase(),
+        name_ar: document.getElementById('qv_name_ar').value.trim(),
+        phone: document.getElementById('qv_phone').value.trim(),
+        vat_number: document.getElementById('qv_vat').value.trim(),
+        cr_number: document.getElementById('qv_cr').value.trim(),
+        building_no: document.getElementById('qv_bldg').value.trim(),
+        street_name: document.getElementById('qv_street').value.trim(),
+        district: document.getElementById('qv_district').value.trim(),
+        city: document.getElementById('qv_city').value.trim(),
+        opening_balance: parseFloat(document.getElementById('qv_opening_bal').value) || 0
+      };
+
+      const res = await fetch(getApiBase() + '/api/parties', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const j = await res.json();
+      if (j.success) {
+        payload.id = j.id;
+        payload.current_balance = payload.opening_balance;
+        vendorsList.push(payload);
+        selectVendor(payload);
+        closeModal('quickVendorModal');
+        document.getElementById('quickVendorForm').reset();
+      } else { alert('Error: ' + j.error); }
+    }
+
+    function openQuickItemModal() { document.getElementById('quickItemModal').style.display = 'flex'; }
+    function openQuickVendorModal() { document.getElementById('quickVendorModal').style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+  </script>
+</body>
+</html>

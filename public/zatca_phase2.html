@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZATCA Fatoora Phase 2 Onboarding & Compliance Audit</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f1f5f9; color: #0f172a; padding: 25px 20px; }
+    .container { max-width: 1050px; margin: 0 auto; }
+
+    .header-box { background: #fff; padding: 20px 24px; border-radius: 12px; border: 1px solid #cbd5e1; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .header-box h2 { font-size: 20px; font-weight: 800; color: #1e293b; }
+    .header-box p { font-size: 13px; color: #64748b; margin-top: 4px; }
+    .btn-nav { text-decoration: none; background: #e2e8f0; color: #334155; padding: 8px 14px; border-radius: 6px; font-size: 12.5px; font-weight: bold; }
+
+    .card { background: #fff; border-radius: 12px; border: 1px solid #cbd5e1; padding: 22px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+    .card h3 { font-size: 16px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; color: #0f172a; }
+
+    .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+    .status-connected { background: #dcfce7; color: #15803d; }
+    .status-disconnected { background: #fee2e2; color: #b91c1c; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+    @media (max-width: 768px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    .stat-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; }
+    .stat-label { font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; }
+    .stat-val { font-size: 19px; font-weight: 900; color: #0f172a; margin-top: 2px; }
+
+    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 4px; }
+    .form-group input, .form-group select { width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; }
+
+    .btn-action { background: #2563eb; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-action:hover { background: #1d4ed8; }
+    .btn-success { background: #16a34a; }
+    .btn-success:hover { background: #15803d; }
+    .btn-danger { background: #dc2626; }
+    .btn-danger:hover { background: #b91c1c; }
+
+    .terminal-box { background: #0f172a; color: #38bdf8; font-family: monospace; font-size: 11.5px; padding: 12px; border-radius: 8px; max-height: 140px; overflow-y: auto; margin-top: 10px; word-break: break-all; }
+
+    .table-container { overflow-x: auto; max-height: 380px; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left; }
+    th { background: #f8fafc; padding: 9px 10px; border-bottom: 2px solid #e2e8f0; color: #475569; position: sticky; top: 0; font-weight: 700; }
+    td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    tr:hover { background: #f8fafc; }
+
+    .badge-reported { background: #dcfce7; color: #15803d; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+    .badge-pending { background: #fef08a; color: #854d0e; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+    .badge-rejected { background: #fee2e2; color: #b91c1c; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+
+    .btn-xml { background: #e0e7ff; color: #4338ca; text-decoration: none; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; }
+    .btn-xml:hover { background: #c7d2fe; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header-box">
+      <div>
+        <h2>🏛️ ZATCA Phase 2 Portal (هيئة الزكاة والضريبة والجمارك)</h2>
+        <p>Cryptographic CSR, Fatoora CSID Onboarding & XML Audit Log / الربط والامتثال الضريبي</p>
+      </div>
+      <a href="index.html" class="btn-nav">⬅ Dashboard</a>
+    </div>
+
+    <!-- 1. Connection & Compliance Status -->
+    <div class="card">
+      <h3>
+        <span>Connection Status / حالة الربط: <span id="dispStatusBadge" class="status-badge status-disconnected">DISCONNECTED</span></span>
+        <button class="btn-action btn-success" style="padding: 6px 12px; font-size: 12px;" onclick="syncPendingInvoices()">⚡ Sync Pending Invoices</button>
+      </h3>
+      <div id="dispStatusDetails" style="font-size: 13px; color: #475569; line-height: 1.6;">
+        Checking credentials...
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-label">Total Invoices</div>
+          <div class="stat-val" id="stat_total">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label" style="color: #16a34a;">Reported / Cleared</div>
+          <div class="stat-val" id="stat_reported" style="color: #16a34a;">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label" style="color: #d97706;">Pending Report</div>
+          <div class="stat-val" id="stat_pending" style="color: #d97706;">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label" style="color: #dc2626;">Rejected</div>
+          <div class="stat-val" id="stat_rejected" style="color: #dc2626;">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Step 1: CSR Generation -->
+    <div class="card" id="step1Card">
+      <h3>1. Security Keys & CSR Generation (secp256k1 Curve)</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Environment Mode</label>
+          <select id="zatca_env">
+            <option value="sandbox">Sandbox / Simulation (Testing Portal)</option>
+            <option value="production">Production (Official Live Government Server)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>VAT Number (15 Digits) *</label>
+          <input type="text" id="zatca_vat" value="399999999900003" maxlength="15">
+        </div>
+        <div class="form-group">
+          <label>Commercial Registration (CR Number) *</label>
+          <input type="text" id="zatca_cr" value="1010000000" maxlength="10">
+        </div>
+        <div class="form-group">
+          <label>Store Legal Name (English) *</label>
+          <input type="text" id="zatca_name" value="MY STORE" placeholder="Legal Registered Name">
+        </div>
+      </div>
+      <button class="btn-action" onclick="generateCSR()">🔑 Generate CSR & Private Key</button>
+      <div id="csrOutput" class="terminal-box" style="display: none;"></div>
+    </div>
+
+    <!-- 3. Step 2: OTP Verification & Onboarding -->
+    <div class="card" id="step2Card">
+      <h3>2. Complete CSID Onboarding with Fatoora Portal OTP</h3>
+      <p style="font-size: 12.5px; color: #64748b; margin-bottom: 12px;">
+        For Simulation Testing, use test OTP <b>123456</b>. For live store, generate OTP from your official ZATCA Fatoora Portal.
+      </p>
+      <div class="form-group" style="max-width: 300px;">
+        <label>Enter 6-Digit OTP *</label>
+        <input type="text" id="zatca_otp" placeholder="e.g. 123456" maxlength="6" style="font-size: 18px; font-weight: bold; letter-spacing: 4px;">
+      </div>
+      <button class="btn-action btn-success" onclick="submitOnboarding()">⚡ Connect & Register CSID</button>
+    </div>
+
+    <!-- 4. Legal Compliance Audit Trail (XML Downloads for Authority) -->
+    <div class="card">
+      <h3>
+        <span>📋 Legal Invoice Audit Trail (UBL 2.1 XML Archive)</span>
+        <button class="btn-action" style="font-size: 11.5px; padding: 4px 10px;" onclick="loadInvoicesTracker()">🔄 Refresh List</button>
+      </h3>
+      <p style="font-size: 12px; color: #64748b; margin-bottom: 10px;">
+        ടാക്സ് അതോറിറ്റി പരിശോധനയ്ക്ക് ആവശ്യപ്പെടുമ്പോൾ സമർപ്പിക്കാൻ താഴെ കാണുന്ന ഇൻവോയ്സുകളുടെ ഒറിജിനൽ UBL 2.1 XML ഫയലുകൾ ഡൗൺലോഡ് ചെയ്യാം:
+      </p>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Invoice #</th>
+              <th>Customer</th>
+              <th>Total Amount</th>
+              <th>ZATCA Status</th>
+              <th>Legal XML File (അതോറിറ്റിക്ക് നൽകാൻ)</th>
+            </tr>
+          </thead>
+          <tbody id="invoicesListBody">
+            <tr><td colspan="6" style="text-align:center; padding:15px;">Loading invoices...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 5. Reset Credentials -->
+    <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h4 style="font-size: 13.5px; color: #dc2626;">Reset ZATCA Security Credentials</h4>
+        <p style="font-size: 12px; color: #64748b;">Clear saved CSID, Private Key, and unlink machine from ZATCA.</p>
+      </div>
+      <button class="btn-action btn-danger" onclick="resetZatca()">Disconnect</button>
+    </div>
+  </div>
+
+  <script>
+    let currentCSR = null;
+
+    window.onload = () => {
+      loadStatus();
+      loadInvoicesTracker();
+    };
+
+    async function loadStatus() {
+      try {
+        const res = await fetch('/api/zatca/status');
+        const j = await res.json();
+        if (j.success) {
+          const d = j.data;
+          const badge = document.getElementById('dispStatusBadge');
+          const details = document.getElementById('dispStatusDetails');
+
+          if (d.isLinked) {
+            badge.className = 'status-badge status-connected';
+            badge.innerText = 'LINKED (CSID ACTIVE)';
+            details.innerHTML = `
+              • <b>Status:</b> Fully Onboarded with Cryptographic CSID (${d.env.toUpperCase()})<br>
+              • <b>Registered VAT:</b> ${d.vatNumber} | <b>CR No:</b> ${d.crNumber}<br>
+              • <b>Compliance ID:</b> ${d.requestId || 'COMPLIANT_ACTIVE'}
+            `;
+          } else {
+            badge.className = 'status-badge status-disconnected';
+            badge.innerText = 'NOT LINKED';
+            details.innerHTML = 'System is ready to generate secp256k1 CSR and link with OTP.';
+          }
+
+          document.getElementById('zatca_vat').value = d.vatNumber;
+          document.getElementById('zatca_cr').value = d.crNumber;
+          document.getElementById('zatca_name').value = d.companyName;
+
+          if (d.invoiceStats) {
+            document.getElementById('stat_total').innerText = d.invoiceStats.total || 0;
+            document.getElementById('stat_reported').innerText = (d.invoiceStats.reported || 0) + (d.invoiceStats.cleared || 0);
+            document.getElementById('stat_pending').innerText = d.invoiceStats.pending || 0;
+            document.getElementById('stat_rejected').innerText = d.invoiceStats.rejected || 0;
+          }
+        }
+      } catch (e) {}
+    }
+
+    async function generateCSR() {
+      const payload = {
+        env: document.getElementById('zatca_env').value,
+        vatNumber: document.getElementById('zatca_vat').value,
+        crNumber: document.getElementById('zatca_cr').value,
+        companyName: document.getElementById('zatca_name').value
+      };
+
+      const res = await fetch('/api/zatca/generate-csr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const j = await res.json();
+      if (j.success) {
+        currentCSR = j.csr;
+        const box = document.getElementById('csrOutput');
+        box.style.display = 'block';
+        box.innerText = `[SUCCESS] secp256k1 EC Keypair & Base64 CSR Generated:\n${j.csr}`;
+        alert('CSR & Private Key generated successfully! Now enter OTP in Step 2.');
+      } else {
+        alert('CSR Error: ' + j.error);
+      }
+    }
+
+    async function submitOnboarding() {
+      const otp = document.getElementById('zatca_otp').value.trim();
+      if (!otp) { alert('Please enter 6-digit OTP'); return; }
+
+      const res = await fetch('/api/zatca/onboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ otp, csr: currentCSR })
+      });
+      const j = await res.json();
+      if (j.success) {
+        alert('🎉 ' + j.message);
+        loadStatus();
+      } else {
+        alert('Onboarding Error: ' + (j.error || 'Failed to onboard'));
+      }
+    }
+
+    async function syncPendingInvoices() {
+      const res = await fetch('/api/zatca/sync-invoices', { method: 'POST' });
+      const j = await res.json();
+      if (j.success) {
+        alert('✅ ' + j.message);
+        loadStatus();
+        loadInvoicesTracker();
+      } else {
+        alert('Sync Error: ' + j.error);
+      }
+    }
+
+    async function loadInvoicesTracker() {
+      try {
+        const res = await fetch('/api/invoices/recent');
+        const j = await res.json();
+        const tbody = document.getElementById('invoicesListBody');
+
+        if (j.success && j.data && j.data.length > 0) {
+          let rows = '';
+          j.data.forEach(inv => {
+            let badgeClass = 'badge-pending';
+            if (inv.zatca_status === 'REPORTED' || inv.zatca_status === 'CLEARED') badgeClass = 'badge-reported';
+            if (inv.zatca_status === 'REJECTED') badgeClass = 'badge-rejected';
+
+            rows += `
+              <tr>
+                <td>${inv.invoice_date} <small style="color:#64748b;">${inv.invoice_time || ''}</small></td>
+                <td><b>${inv.invoice_no}</b></td>
+                <td>${inv.customer_name || 'Walk-in'}</td>
+                <td><b>${parseFloat(inv.total_amount).toFixed(2)} SAR</b></td>
+                <td><span class="${badgeClass}">${inv.zatca_status || 'PENDING'}</span></td>
+                <td>
+                  <a href="/api/zatca/download-xml/${inv.invoice_no}" class="btn-xml" target="_blank">
+                    📥 Download UBL XML
+                  </a>
+                </td>
+              </tr>
+            `;
+          });
+          tbody.innerHTML = rows;
+        } else {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:15px;">No invoices found yet.</td></tr>';
+        }
+      } catch (e) {
+        document.getElementById('invoicesListBody').innerHTML = '<tr><td colspan="6" style="text-align:center; padding:15px; color:#dc2626;">Error loading audit log.</td></tr>';
+      }
+    }
+
+    async function resetZatca() {
+      if (!confirm('Are you sure you want to disconnect and clear ZATCA credentials?')) return;
+      const res = await fetch('/api/zatca/reset', { method: 'POST' });
+      const j = await res.json();
+      if (j.success) {
+        alert(j.message);
+        loadStatus();
+      }
+    }
+  </script>
+</body>
+</html>

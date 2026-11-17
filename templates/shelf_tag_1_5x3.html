@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Shelf Tag (80mm Thermal)</title>
+  <style>
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+    }
+    
+    @page {
+      size: 80mm auto;
+      margin: 0;
+    }
+
+    body {
+      width: 72mm;
+      margin: 0 auto;
+      padding: 6px 4px;
+      background: #fff;
+      color: #000;
+      overflow: hidden;
+    }
+
+    .tag-container {
+      border: 1.5px dashed #000;
+      border-radius: 4px;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid #000;
+      padding-bottom: 4px;
+    }
+
+    .item-names {
+      max-width: 72%;
+    }
+
+    .name-en {
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1.15;
+      text-transform: uppercase;
+      word-break: break-word;
+    }
+
+    .name-ar {
+      font-size: 11px;
+      font-weight: bold;
+      direction: rtl;
+      line-height: 1.2;
+      margin-top: 2px;
+    }
+
+    .meta-info {
+      text-align: right;
+      font-size: 9px;
+      font-weight: bold;
+      line-height: 1.3;
+    }
+
+    .middle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2px 0;
+    }
+
+    .price-box {
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+    }
+
+    .currency {
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .price-val {
+      font-size: 36px;
+      font-weight: 900;
+      line-height: 0.95;
+      letter-spacing: -1px;
+    }
+
+    .vat-badge-box {
+      text-align: right;
+    }
+
+    .vat-badge {
+      font-size: 8px;
+      font-weight: 900;
+      border: 1px solid #000;
+      padding: 2px 4px;
+      border-radius: 3px;
+      display: inline-block;
+      line-height: 1.1;
+    }
+
+    .barcode-section {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 3px 0;
+    }
+
+    #barcode_svg {
+      width: 100%;
+      max-width: 230px;
+      height: 42px;
+    }
+
+    .bottom-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px dashed #000;
+      padding-top: 4px;
+      font-size: 9.5px;
+      font-weight: bold;
+    }
+
+    .cipher-only {
+      font-size: 11px;
+      font-weight: 900;
+      font-family: monospace;
+      letter-spacing: 1.2px;
+    }
+
+    @media print {
+      body { width: 72mm; margin: 0; padding: 4px; }
+      .tag-container { page-break-inside: avoid; }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+</head>
+<body>
+
+  <div class="tag-container">
+    <div class="top-row">
+      <div class="item-names">
+        <div class="name-en" id="disp_name_en">ITEM NAME LOADING...</div>
+        <div class="name-ar" id="disp_name_ar">اسم الصنف</div>
+      </div>
+      <div class="meta-info">
+        <div>UNIT: <b id="disp_unit">PCS</b></div>
+        <div>PLU: <b id="disp_plu">--</b></div>
+      </div>
+    </div>
+
+    <div class="middle-row">
+      <div class="price-box">
+        <span class="currency">SAR</span>
+        <span class="price-val" id="disp_price">0.00</span>
+      </div>
+      <div class="vat-badge-box">
+        <div class="vat-badge">INCL. 15% VAT<br>شامل الضريبة</div>
+      </div>
+    </div>
+
+    <div class="barcode-section">
+      <svg id="barcode_svg"></svg>
+    </div>
+
+    <div class="bottom-row">
+      <div>BARCODE: <span id="disp_barcode_txt">00000000</span></div>
+      <div>
+        <span class="cipher-only" id="disp_cipher_code"></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get('id');
+    const autoPrint = params.get('autoprint') === '1';
+
+    function encodeCostCipher(costVal, cipherKey = 'COMPUTERSX') {
+      if (!costVal || costVal <= 0) return '';
+      const costIncVat = costVal * 1.15;
+      const cleanKey = cipherKey.toUpperCase();
+
+      function mapDigit(d) {
+        if (d === '0') return cleanKey[9] || 'X';
+        const n = parseInt(d, 10);
+        return cleanKey[n - 1] || d;
+      }
+
+      const formatted = parseFloat(costIncVat).toFixed(2);
+      let numStr = formatted.endsWith('.00') ? String(parseInt(costIncVat, 10)) : formatted.replace('.', '');
+      return numStr.split('').map(mapDigit).join('');
+    }
+
+    window.onload = async () => {
+      let storeCipher = 'COMPUTERSX';
+      try {
+        const sRes = await fetch('/api/settings');
+        const sJson = await sRes.json();
+        if (sJson.success && sJson.data && sJson.data.cost_cipher_key) {
+          storeCipher = sJson.data.cost_cipher_key;
+        }
+      } catch(e) {}
+
+      if (!productId) return;
+
+      try {
+        const res = await fetch(`/api/products/${productId}`);
+        const j = await res.json();
+        if (j.success && j.data) {
+          const p = j.data;
+          document.getElementById('disp_name_en').innerText = p.name_en || 'ITEM NAME';
+          document.getElementById('disp_name_ar').innerText = p.name_ar || '';
+          document.getElementById('disp_unit').innerText = p.unit || 'PCS';
+          document.getElementById('disp_plu').innerText = p.item_code || '--';
+          document.getElementById('disp_price').innerText = parseFloat(p.selling_price || 0).toFixed(2);
+
+          const rawCost = parseFloat(p.cost_price || 0);
+          document.getElementById('disp_cipher_code').innerText = encodeCostCipher(rawCost, storeCipher);
+
+          const bCode = p.barcode1 || p.item_code || '00000000';
+          document.getElementById('disp_barcode_txt').innerText = bCode;
+
+          // Barcode rendered with high clarity and larger dimensions for easy scanning
+          JsBarcode("#barcode_svg", bCode, {
+            format: "CODE128",
+            width: 1.8,
+            height: 38,
+            displayValue: false,
+            margin: 0
+          });
+
+          if (autoPrint) {
+            setTimeout(() => {
+              window.print();
+            }, 400);
+          }
+        }
+      } catch(e) {
+        console.error('Failed to load product data', e);
+      }
+    };
+  </script>
+</body>
+</html>

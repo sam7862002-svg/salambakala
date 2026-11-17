@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Products & Inventory Management</title>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f8fafc; color: #1e293b; padding: 20px 25px; }
+    
+    .top-nav { display: flex; justify-content: space-between; align-items: center; max-width: 1500px; margin: 0 auto 16px auto; }
+    .top-nav h2 { font-size: 22px; font-weight: 700; color: #0f172a; }
+    .btn-back { text-decoration: none; background: #e2e8f0; color: #334155; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; }
+    
+    .table-panel {
+      background: #ffffff;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      padding: 18px 20px;
+      max-width: 1500px;
+      margin: 0 auto;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    
+    .action-toolbar {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      justify-content: space-between; align-items: center; margin-bottom: 14px;
+    }
+    .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .chip {
+      background: #f1f5f9; border: 1px solid #e2e8f0;
+      padding: 6px 14px; border-radius: 20px; font-size: 12.5px; cursor: pointer; font-weight: 600; color: #475569;
+    }
+    .chip.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .search-input { padding: 8px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13.5px; width: 320px; }
+
+    .table-container { overflow-x: auto; max-height: calc(100vh - 230px); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+    th { background: #f8fafc; padding: 11px 10px; border-bottom: 2px solid #e2e8f0; color: #475569; position: sticky; top: 0; z-index: 10; font-weight: 700; }
+    td { padding: 9px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    tr:hover { background: #f8fafc; }
+
+    .tag-badge { padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; }
+    .badge-active { background: #dcfce7; color: #15803d; }
+    .badge-inactive { background: #fee2e2; color: #b91c1c; }
+
+    .bulk-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      background: #eff6ff; border: 1px solid #bfdbfe;
+      padding: 9px 14px; border-radius: 8px; margin-bottom: 12px; font-size: 13px;
+    }
+    .btn-small {
+      background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px;
+      padding: 5px 9px; font-size: 11.5px; font-weight: 600; cursor: pointer; white-space: nowrap;
+      text-decoration: none; color: #1e293b; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .btn-small:hover { background: #e2e8f0; }
+
+    .btn-print-tag { background: #0284c7; color: #fff; border: 1px solid #0369a1; }
+    .btn-print-tag:hover { background: #0369a1; }
+    .btn-print-barcode { background: #4f46e5; color: #fff; border: 1px solid #4338ca; }
+    .btn-print-barcode:hover { background: #4338ca; }
+
+    .btn-primary-add {
+      background: #16a34a; color: #fff; border: 1px solid #15803d; border-radius: 6px;
+      padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+    }
+    .btn-primary-add:hover { background: #15803d; }
+
+    .modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.65); z-index: 1000; justify-content: center; align-items: center;
+    }
+    .modal-box {
+      background: #ffffff; border-radius: 12px; padding: 22px; width: 95%; max-width: 580px;
+      max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 14px; }
+    .modal-header h3 { font-size: 17px; color: #0f172a; font-weight: 700; }
+    .btn-close-modal { border: none; background: none; font-size: 24px; color: #64748b; cursor: pointer; }
+
+    .form-group { margin-bottom: 11px; position: relative; }
+    .form-group label { display: block; font-size: 11.5px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+    .form-group input, .form-group select {
+      width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;
+    }
+    .form-group input.uppercase { text-transform: uppercase; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .input-btn-group { display: flex; gap: 6px; }
+
+    .profit-badge-box {
+      background: #f0fdf4; border: 1px dashed #86efac; border-radius: 6px; padding: 10px; margin: 10px 0; font-size: 12px; color: #166534;
+    }
+    .profit-badge-box div { display: flex; justify-content: space-between; margin-bottom: 3px; }
+
+    .btn-submit {
+      width: 100%; background: #2563eb; color: #fff; border: none; padding: 11px;
+      border-radius: 6px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 6px;
+    }
+    .btn-submit:hover { background: #1d4ed8; }
+
+    .suggestions-list {
+      position: absolute; top: 100%; left: 0; right: 0; background: #fff;
+      border: 1px solid #cbd5e1; border-radius: 6px; z-index: 100; max-height: 160px;
+      overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none;
+    }
+    .suggestion-item { padding: 8px 12px; font-size: 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+    .suggestion-item:hover { background: #eff6ff; color: #2563eb; }
+
+    #printModal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6); z-index: 999; justify-content: center; align-items: center;
+    }
+    .modal-content-print {
+      background: #fff; padding: 20px; border-radius: 10px; max-width: 550px; width: 90%; max-height: 85vh; overflow-y: auto;
+    }
+    @media screen {
+      .print-preview-wrapper { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 15px; justify-content: center; }
+    }
+    .shelf-tag-1_5x3 {
+      width: 72mm; box-sizing: border-box; border: 1px dashed #64748b; padding: 6px 8px;
+      display: flex; flex-direction: column; justify-content: space-between; background: #ffffff; page-break-inside: avoid; position: relative; margin-bottom: 10px;
+    }
+    .tag-header-ar { font-size: 12px; font-weight: bold; text-align: right; direction: rtl; line-height: 1.1; overflow: hidden; white-space: nowrap; }
+    .tag-header-en { font-size: 13px; font-weight: 900; text-transform: uppercase; line-height: 1.1; overflow: hidden; white-space: nowrap; }
+    .tag-price-row { display: flex; justify-content: space-between; align-items: flex-end; margin: 4px 0; }
+    .tag-price-main { font-size: 32px; font-weight: 900; color: #000; line-height: 1; }
+    .tag-price-main span { font-size: 12px; font-weight: normal; }
+    .tag-vat-note { font-size: 8.5px; color: #333; line-height: 1.2; text-align: right; }
+    .tag-barcode-wrap { display: flex; justify-content: center; align-items: center; margin-top: 4px; }
+    .tag-barcode-wrap svg { height: 32px; max-width: 210px; }
+    .tag-cipher { font-family: monospace; font-size: 10px; font-weight: bold; background: #fef08a; padding: 1px 4px; border-radius: 2px; }
+
+    .small-tag-garment {
+      width: 72mm; box-sizing: border-box; border: 1px dashed #94a3b8; padding: 5px;
+      display: flex; flex-direction: column; justify-content: space-between; text-align: center; background: #fff; page-break-inside: avoid; margin-bottom: 10px;
+    }
+    .small-tag-garment .p-name { font-size: 11px; font-weight: bold; text-transform: uppercase; overflow: hidden; white-space: nowrap; }
+    .small-tag-garment .p-price { font-size: 16px; font-weight: 900; line-height: 1; margin: 2px 0; }
+    .small-tag-garment svg { height: 32px; max-width: 220px; margin: 0 auto; }
+    .small-tag-garment .p-meta { font-size: 9px; font-weight: bold; display: flex; justify-content: space-between; margin-top: 2px; }
+
+    @media print {
+      body * { visibility: hidden; }
+      #printableArea, #printableArea * { visibility: visible; }
+      #printableArea { position: absolute; left: 0; top: 0; width: 72mm; display: block !important; }
+      .shelf-tag-1_5x3, .small-tag-garment { border: none !important; margin: 0 auto 10px auto; page-break-after: always; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-nav">
+    <h2>📦 Products & Inventory / المنتجات والمخزون</h2>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button class="btn-primary-add" onclick="openProductModal()">➕ Add New Product / إضافة منتج</button>
+      <button class="btn-small" onclick="exportToCSV()">📥 Export CSV</button>
+      <label class="btn-small" style="padding-top: 6px; cursor: pointer; background: #059669; color: #fff; border-color: #047857;">
+        📤 Bulk Import (5000+ Items) <input type="file" id="csvFileInput" accept=".csv" style="display: none;" onchange="importCSV(event)">
+      </label>
+      <button class="btn-small" style="background: #fee2e2; color: #b91c1c; border-color: #fca5a5;" onclick="resetAllProducts()">🗑️ Clear All</button>
+      <a href="index.html" class="btn-back">⬅ Dashboard</a>
+    </div>
+  </div>
+
+  <div class="table-panel">
+    <div class="action-toolbar">
+      <div class="filter-chips">
+        <button class="chip active" onclick="setFilter('all', this)">All Products</button>
+        <button class="chip" onclick="setFilter('missing_ar', this)">Missing Arabic</button>
+        <button class="chip" onclick="setFilter('low_stock', this)">Low Stock</button>
+        <button class="chip" onclick="setFilter('has_code', this)">Has 4-Digit Code</button>
+      </div>
+      <input type="text" class="search-input" id="tableSearch" placeholder="🔍 Search PLU, Barcode, Name..." oninput="renderTable()">
+    </div>
+
+    <div class="bulk-bar">
+      <div>
+        <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this.checked)">
+        <span style="margin-left: 6px; font-weight: 600;" id="selectedCount">0 Selected</span>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <label style="font-size: 12px; font-weight: 600;">Bulk Template:</label>
+        <select id="printTemplateSelect" style="padding: 4px 8px; border-radius: 4px; font-size: 12px; border: 1px solid #cbd5e1;">
+          <option value="shelf_1_5x3">Shelf Tag (80mm)</option>
+          <option value="barcode_1x2">Barcode Label (80mm)</option>
+        </select>
+        <button class="btn-small" style="background: #2563eb; color: #fff; border-color: #2563eb;" onclick="openPrintModal()">🖨️ Print Selected</button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th width="25"></th>
+            <th>PLU</th>
+            <th>Barcodes</th>
+            <th>Product Name</th>
+            <th>Cost</th>
+            <th>Price (Inc. VAT)</th>
+            <th>Stock</th>
+            <th>Status</th>
+            <th>Actions / Labels</th>
+          </tr>
+        </thead>
+        <tbody id="productTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PRODUCT MODAL -->
+  <div id="productModal" class="modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="formTitle">Add New Product / إضافة منتج</h3>
+        <button type="button" class="btn-close-modal" onclick="closeProductModal()">&times;</button>
+      </div>
+
+      <form id="productForm" onsubmit="handleFormSubmit(event)">
+        <input type="hidden" id="editProductId">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>4-Digit Item Code (PLU)</label>
+            <input type="text" id="item_code" maxlength="8" placeholder="e.g. 1001">
+          </div>
+          <div class="form-group">
+            <label>Main Barcode 1 *</label>
+            <div class="input-btn-group">
+              <input type="text" id="barcode1" required placeholder="Barcode" class="uppercase">
+              <button type="button" class="btn-small" onclick="generateAutoBarcode()">⚡ Gen</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Secondary Barcode 2</label>
+            <input type="text" id="barcode2" placeholder="Optional" class="uppercase">
+          </div>
+          <div class="form-group">
+            <label>Third Barcode 3</label>
+            <input type="text" id="barcode3" placeholder="Optional" class="uppercase">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Product Name (English / Manglish) *</label>
+          <input type="text" id="name_en" required placeholder="Type in Manglish (e.g. ari, paal, meen) or English" class="uppercase" oninput="handleSmartInput(this.value)" autocomplete="off">
+          <div id="suggestionsBox" class="suggestions-list"></div>
+        </div>
+
+        <div class="form-group">
+          <label>Product Name (Arabic / الاسم بالعربي) *</label>
+          <div class="input-btn-group">
+            <input type="text" id="name_ar" required placeholder="الاسم بالعربي" style="direction: rtl;">
+            <button type="button" class="btn-small" onclick="autoTranslateToArabic()">🌐 Translate</button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Unit / الوحدة</label>
+            <select id="unit">
+              <option value="PCS">PCS (حبة)</option>
+              <option value="BOX">BOX (علبة)</option>
+              <option value="CTN">CTN (كرتون)</option>
+              <option value="KG">KG (كيلو)</option>
+              <option value="PKT">PKT (كيس)</option>
+              <option value="MTR">MTR (متر)</option>
+              <option value="DOZ">DOZ (درزن)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Category / القسم</label>
+            <input type="text" id="category" value="GENERAL" class="uppercase">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Cost Price (Without VAT)</label>
+            <input type="number" step="0.01" id="cost_price" value="0.00" oninput="calculateLiveProfit()">
+          </div>
+          <div class="form-group">
+            <label>Selling Price (With 15% VAT) *</label>
+            <input type="number" step="0.01" id="selling_price" required placeholder="0.00" oninput="calculateLiveProfit()">
+          </div>
+        </div>
+
+        <div class="profit-badge-box">
+          <div><span>Base Price (قبل الضريبة):</span> <b id="disp_base_price">0.00 SAR</b></div>
+          <div><span>15% VAT Amount (الضريبة):</span> <b id="disp_vat_amount">0.00 SAR</b></div>
+          <div><span>Profit / Margin (الربح المتوقع):</span> <b id="disp_profit">0.00 SAR (0%)</b></div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Stock Qty / الكمية</label>
+            <input type="number" step="any" id="stock_quantity" value="0">
+          </div>
+          <div class="form-group">
+            <label>Min Alert / تنبيه النقص</label>
+            <input type="number" step="any" id="min_stock_alert" value="5">
+          </div>
+        </div>
+
+        <button type="submit" id="btnSubmitForm" class="btn-submit">Save Product / حفظ المنتج</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- DEDICATED BARCODE QUANTITY MODAL (WORKS FLAWLESSLY IN ELECTRON) -->
+  <div id="barcodeQtyModal" class="modal">
+    <div class="modal-box" style="max-width: 380px; text-align: center;">
+      <h3 style="color:#4f46e5; margin-bottom: 8px;">🔖 Print Barcode Labels</h3>
+      <p id="bqty_item_name" style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 12px;"></p>
+      
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">How many labels to print? / عدد الملصقات</label>
+        <input type="number" id="barcode_print_qty" value="1" min="1" max="100" style="width: 120px; font-size: 22px; font-weight: 900; text-align: center; padding: 6px; border: 2px solid #4f46e5; border-radius: 8px;" autofocus>
+      </div>
+
+      <div style="display: flex; gap: 8px; justify-content: center;">
+        <button type="button" class="btn-small" onclick="closeBarcodeQtyModal()" style="padding: 8px 16px;">Cancel</button>
+        <button type="button" class="btn-submit" style="width: auto; padding: 8px 24px; margin: 0; background: #4f46e5;" onclick="confirmBarcodePrint()">🖨️ Print Labels</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="printModal">
+    <div class="modal-content-print">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3>Tag Print Preview / معاينة الطباعة</h3>
+        <button onclick="closePrintModal()" style="border:none; background:none; font-size: 20px; cursor: pointer;">&times;</button>
+      </div>
+      <div class="print-preview-wrapper" id="printPreviewContainer"></div>
+      <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn-small" onclick="closePrintModal()">Cancel</button>
+        <button class="btn-submit" style="width: auto; padding: 8px 24px;" onclick="window.print()">Print Now / طباعة</button>
+      </div>
+    </div>
+  </div>
+  <div id="printableArea" style="display: none;"></div>
+
+  <script>
+    function getApiBase() {
+      const role = localStorage.getItem('pos_machine_role') || 'server';
+      const ip = localStorage.getItem('pos_server_ip') || '';
+      const port = localStorage.getItem('pos_server_port') || window.location.port || '5050';
+      return (role === 'terminal' && ip) ? `http://${ip}:${port}` : '';
+    }
+
+    const saudiGlossary = {
+      'milk': 'حليب', 'fresh milk': 'حليب طازج', 'laban': 'لبن', 'buttermilk': 'لبن مخيض',
+      'yoghurt': 'زبادي', 'yogurt': 'زبادي', 'curd': 'زبادي', 'tea': 'شاي', 'tea powder': 'شاي بودرة',
+      'coffee': 'قهوة', 'sugar': 'سكر', 'rice': 'أرز', 'basmati rice': 'أرز بسمتي', 'salt': 'ملح',
+      'oil': 'زيت', 'cooking oil': 'زيت طهي', 'corn oil': 'زيت ذرة', 'sunflower oil': 'زيت دوار الشمس',
+      'water': 'مياه', 'drinking water': 'مياه شرب', 'chicken': 'دجاج', 'chicken burger': 'برجر دجاج',
+      'beef': 'لحم بقري', 'meat': 'لحم', 'fish': 'سمك', 'egg': 'بيض', 'eggs': 'بيض', 'bread': 'خبز',
+      'soap': 'صابون', 'shampoo': 'شامبو', 'onion': 'بصل', 'potato': 'بطاطس', 'tomato': 'طماطم'
+    };
+
+    let storeCipherKey = 'COMPUTERSX';
+    let pendingBarcodeProductId = null;
+
+    async function loadStoreCipher() {
+      try {
+        const res = await fetch(`${getApiBase()}/api/settings`);
+        const j = await res.json();
+        if (j.success && j.data && j.data.cost_cipher_key) {
+          storeCipherKey = j.data.cost_cipher_key;
+        }
+      } catch(e) {}
+    }
+
+    function encodeCost(costVal) {
+      if (costVal === undefined || costVal === null || costVal <= 0) return '';
+      const costIncVat = costVal * 1.15;
+      const cleanKey = (storeCipherKey || 'COMPUTERSX').toUpperCase();
+
+      function mapDigit(d) {
+        if (d === '0') return cleanKey[9] || 'X';
+        const n = parseInt(d, 10);
+        return cleanKey[n - 1] || d;
+      }
+
+      const formatted = parseFloat(costIncVat).toFixed(2);
+      let numStr = formatted.endsWith('.00') ? String(parseInt(costIncVat, 10)) : formatted.replace('.', '');
+      return numStr.split('').map(mapDigit).join('');
+    }
+
+    function printLabel(productId, type) {
+      const apiPrefix = getApiBase() ? getApiBase() : window.location.origin;
+
+      if (type === 'shelf_tag') {
+        const targetPrinter = localStorage.getItem('pos_thermal_printer') || '';
+        const url = `${apiPrefix}/templates/shelf_tag_1_5x3.html?id=${productId}&autoprint=1&printer=${encodeURIComponent(targetPrinter)}`;
+        
+        if (window.require) {
+          try {
+            const { ipcRenderer } = window.require('electron');
+            ipcRenderer.send('print-direct', { url, printerName: targetPrinter });
+            return;
+          } catch (e) {
+            console.error('IPC Direct Print Error:', e);
+          }
+        }
+        window.open(url, '_blank', 'width=450,height=400');
+      } else if (type === 'barcode') {
+        pendingBarcodeProductId = productId;
+        const p = allProducts.find(item => item.id === productId);
+        document.getElementById('bqty_item_name').innerText = p ? p.name_en : 'Product #' + productId;
+        document.getElementById('barcode_print_qty').value = 1;
+        document.getElementById('barcodeQtyModal').style.display = 'flex';
+        setTimeout(() => {
+          const inp = document.getElementById('barcode_print_qty');
+          inp.focus();
+          inp.select();
+        }, 100);
+      }
+    }
+
+    function closeBarcodeQtyModal() {
+      document.getElementById('barcodeQtyModal').style.display = 'none';
+      pendingBarcodeProductId = null;
+    }
+
+    function confirmBarcodePrint() {
+      if (!pendingBarcodeProductId) return;
+      const copies = parseInt(document.getElementById('barcode_print_qty').value) || 1;
+      const targetPrinter = localStorage.getItem('pos_barcode_printer') || localStorage.getItem('pos_thermal_printer') || '';
+      const apiPrefix = getApiBase() ? getApiBase() : window.location.origin;
+      const url = `${apiPrefix}/templates/barcode_label_1x2.html?id=${pendingBarcodeProductId}&autoprint=1&printer=${encodeURIComponent(targetPrinter)}`;
+
+      closeBarcodeQtyModal();
+
+      if (window.require) {
+        try {
+          const { ipcRenderer } = window.require('electron');
+          for (let i = 0; i < copies; i++) {
+            ipcRenderer.send('print-direct', { url, printerName: targetPrinter });
+          }
+          return;
+        } catch (e) {
+          console.error('IPC Direct Print Error:', e);
+        }
+      }
+
+      for (let i = 0; i < copies; i++) {
+        window.open(url, '_blank', 'width=450,height=400');
+      }
+    }
+
+    let debounceTimer = null;
+
+    function handleSmartInput(val) {
+      clearTimeout(debounceTimer);
+      const q = val.trim();
+      const sb = document.getElementById('suggestionsBox');
+      if (!q) { sb.style.display = 'none'; return; }
+
+      debounceTimer = setTimeout(async () => {
+        try {
+          const itRes = await fetch(`https://inputtools.google.com/request?text=${encodeURIComponent(q)}&itc=ml-t-i0-und&num=3`);
+          const itJson = await itRes.json();
+          
+          if (itJson && itJson[1] && itJson[1][0] && itJson[1][0][1]) {
+            const malayalamWords = itJson[1][0][1];
+            sb.innerHTML = '';
+
+            const mlWord = malayalamWords[0];
+            const transRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=ml&tl=en&dt=t&q=${encodeURIComponent(mlWord)}`);
+            const transJson = await transRes.json();
+            const englishResult = (transJson && transJson[0] && transJson[0][0] && transJson[0][0][0]) ? transJson[0][0][0].toUpperCase() : '';
+
+            if (englishResult) {
+              const item = document.createElement('div');
+              item.className = 'suggestion-item';
+              item.innerHTML = `<b>${englishResult}</b> <span style="color:#64748b;">(Malayalam: ${mlWord})</span>`;
+              item.onclick = () => {
+                document.getElementById('name_en').value = englishResult;
+                sb.style.display = 'none';
+                autoTranslateToArabic(englishResult);
+              };
+              sb.appendChild(item);
+              sb.style.display = 'block';
+            }
+          }
+        } catch (err) {
+          sb.style.display = 'none';
+        }
+      }, 300);
+    }
+
+    async function autoTranslateToArabic(overrideText) {
+      const text = (overrideText || document.getElementById('name_en').value).trim();
+      if (!text) return;
+
+      const lower = text.toLowerCase();
+      if (saudiGlossary[lower]) {
+        document.getElementById('name_ar').value = saudiGlossary[lower];
+        return;
+      }
+
+      try {
+        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ar&dt=t&q=${encodeURIComponent(text)}`);
+        const json = await res.json();
+        if (json && json[0] && json[0][0] && json[0][0][0]) {
+          let arText = json[0][0][0];
+          if (/ milk /i.test(text)) arText = arText.replace(/لبن/g, 'حليب');
+          document.getElementById('name_ar').value = arText;
+        }
+      } catch (err) {}
+    }
+
+    function generateAutoBarcode() {
+      const randomPart = Math.floor(10000000 + Math.random() * 90000000);
+      document.getElementById('barcode1').value = '20' + randomPart;
+    }
+
+    function calculateLiveProfit() {
+      const cost = parseFloat(document.getElementById('cost_price').value) || 0;
+      const sellingWithVat = parseFloat(document.getElementById('selling_price').value) || 0;
+      const basePrice = sellingWithVat / 1.15;
+      const vatAmount = sellingWithVat - basePrice;
+      const profit = basePrice - cost;
+      const profitMarginPct = cost > 0 ? ((profit / cost) * 100).toFixed(1) : 0;
+      document.getElementById('disp_base_price').innerText = basePrice.toFixed(2) + ' SAR';
+      document.getElementById('disp_vat_amount').innerText = vatAmount.toFixed(2) + ' SAR';
+      document.getElementById('disp_profit').innerText = `${profit.toFixed(2)} SAR (${profitMarginPct}%)`;
+    }
+
+    let allProducts = [];
+    let currentFilter = 'all';
+
+    async function loadProducts() {
+      try {
+        const res = await fetch(`${getApiBase()}/api/products`);
+        const json = await res.json();
+        if (json.success) {
+          allProducts = json.data;
+          renderTable();
+        }
+      } catch (err) { console.error(err); }
+    }
+
+    function openProductModal() {
+      resetFormToCreate();
+      document.getElementById('productModal').style.display = 'flex';
+      setTimeout(() => document.getElementById('barcode1').focus(), 100);
+    }
+
+    function closeProductModal() {
+      document.getElementById('productModal').style.display = 'none';
+    }
+
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+      const editId = document.getElementById('editProductId').value;
+      const payload = {
+        item_code: document.getElementById('item_code').value.trim() || null,
+        barcode1: document.getElementById('barcode1').value.trim().toUpperCase(),
+        barcode2: document.getElementById('barcode2').value.trim().toUpperCase() || null,
+        barcode3: document.getElementById('barcode3').value.trim().toUpperCase() || null,
+        name_en: document.getElementById('name_en').value.trim().toUpperCase(),
+        name_ar: document.getElementById('name_ar').value.trim(),
+        category: document.getElementById('category').value.trim().toUpperCase(),
+        unit: document.getElementById('unit').value,
+        cost_price: parseFloat(document.getElementById('cost_price').value) || 0,
+        selling_price: parseFloat(document.getElementById('selling_price').value) || 0,
+        vat_rate: 15.00,
+        stock_quantity: parseFloat(document.getElementById('stock_quantity').value) || 0,
+        min_stock_alert: parseFloat(document.getElementById('min_stock_alert').value) || 5
+      };
+
+      const url = editId ? `${getApiBase()}/api/products/${editId}` : `${getApiBase()}/api/products`;
+      const method = editId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        alert(editId ? 'Product updated successfully!' : 'Product added successfully!');
+        closeProductModal();
+        loadProducts();
+      } else {
+        alert('Error: ' + data.error);
+      }
+    }
+
+    function editProduct(id) {
+      const p = allProducts.find(item => item.id === id);
+      if (!p) return;
+      document.getElementById('editProductId').value = p.id;
+      document.getElementById('item_code').value = p.item_code || '';
+      document.getElementById('barcode1').value = p.barcode1 || '';
+      document.getElementById('barcode2').value = p.barcode2 || '';
+      document.getElementById('barcode3').value = p.barcode3 || '';
+      document.getElementById('name_en').value = p.name_en || '';
+      document.getElementById('name_ar').value = p.name_ar || '';
+      document.getElementById('category').value = p.category || 'GENERAL';
+      document.getElementById('unit').value = p.unit || 'PCS';
+      document.getElementById('cost_price').value = p.cost_price;
+      document.getElementById('selling_price').value = p.selling_price;
+      document.getElementById('stock_quantity').value = p.stock_quantity;
+      document.getElementById('min_stock_alert').value = p.min_stock_alert;
+
+      calculateLiveProfit();
+      document.getElementById('formTitle').innerText = `Edit Product #${p.id} / تعديل`;
+      document.getElementById('btnSubmitForm').innerText = 'Update Product / حفظ التعديل';
+      document.getElementById('productModal').style.display = 'flex';
+    }
+
+    function resetFormToCreate() {
+      document.getElementById('editProductId').value = '';
+      document.getElementById('productForm').reset();
+      document.getElementById('cost_price').value = '0.00';
+      document.getElementById('stock_quantity').value = '0';
+      document.getElementById('formTitle').innerText = 'Add New Product / إضافة منتج';
+      document.getElementById('btnSubmitForm').innerText = 'Save Product / حفظ المنتج';
+      calculateLiveProfit();
+    }
+
+    async function toggleStatus(id) {
+      await fetch(`${getApiBase()}/api/products/${id}/toggle`, { method: 'PATCH' });
+      loadProducts();
+    }
+
+    async function deleteProduct(id) {
+      if (!confirm('Are you sure you want to delete this product?')) return;
+      await fetch(`${getApiBase()}/api/products/${id}`, { method: 'DELETE' });
+      loadProducts();
+    }
+
+    async function resetAllProducts() {
+      const pwd = prompt('Enter Admin Password to Clear All Products:');
+      if (pwd === null) return;
+      if (pwd !== '1234' && pwd !== 'ADMIN' && pwd !== 'admin123') {
+        alert('Incorrect Password!');
+        return;
+      }
+
+      const code = prompt('Type RESET to confirm deleting ALL products:');
+      if (code === 'RESET') {
+        const res = await fetch(`${getApiBase()}/api/products/reset`, { method: 'POST' });
+        const d = await res.json();
+        if (d.success) {
+          alert('All products deleted successfully.');
+          loadProducts();
+        }
+      }
+    }
+
+    function setFilter(filterType, element) {
+      currentFilter = filterType;
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      element.classList.add('active');
+      renderTable();
+    }
+
+    function renderTable() {
+      const search = document.getElementById('tableSearch').value.toLowerCase();
+      const tbody = document.getElementById('productTableBody');
+      tbody.innerHTML = '';
+
+      const filtered = allProducts.filter(p => {
+        const matchesSearch = p.name_en.toLowerCase().includes(search) || 
+                              (p.name_ar && p.name_ar.includes(search)) || 
+                              p.barcode1.toLowerCase().includes(search) ||
+                              (p.item_code && p.item_code.toLowerCase().includes(search));
+
+        if (!matchesSearch) return false;
+        if (currentFilter === 'missing_ar') return !p.name_ar || p.name_ar.trim() === '';
+        if (currentFilter === 'low_stock') return p.stock_quantity <= p.min_stock_alert;
+        if (currentFilter === 'has_code') return p.item_code && p.item_code.trim() !== '';
+        return true;
+      });
+
+      filtered.forEach(p => {
+        const tr = document.createElement('tr');
+        const bCodes = [p.barcode1, p.barcode2, p.barcode3].filter(Boolean).join('<br>');
+        tr.innerHTML = `
+          <td><input type="checkbox" class="prod-select" value="${p.id}" onchange="updateSelectedCount()"></td>
+          <td><b>${p.item_code || '—'}</b></td>
+          <td style="font-size:11px;">${bCodes}</td>
+          <td>
+            <div style="font-weight: 600;">${p.name_en}</div>
+            <div style="font-size: 11px; color: #2563eb; direction: rtl;">${p.name_ar || '—'}</div>
+          </td>
+          <td>${p.cost_price.toFixed(2)}</td>
+          <td><b>${p.selling_price.toFixed(2)}</b></td>
+          <td>${p.stock_quantity} <small>${p.unit}</small></td>
+          <td>
+            <span class="tag-badge ${p.is_active ? 'badge-active' : 'badge-inactive'}" onclick="toggleStatus(${p.id})">
+              ${p.is_active ? 'Active' : 'Inactive'}
+            </span>
+          </td>
+          <td style="white-space: nowrap; display: flex; gap: 4px; align-items: center;">
+            <button class="btn-small btn-print-tag" title="Print Shelf Tag" onclick="printLabel(${p.id}, 'shelf_tag')">🏷️ Tag</button>
+            <button class="btn-small btn-print-barcode" title="Print Barcode" onclick="printLabel(${p.id}, 'barcode')">🔖 Barcode</button>
+            <button class="btn-small" onclick="editProduct(${p.id})">✏️</button>
+            <button class="btn-small" style="color: #b91c1c;" onclick="deleteProduct(${p.id})">🗑️</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      updateSelectedCount();
+    }
+
+    function toggleSelectAll(checked) {
+      document.querySelectorAll('.prod-select').forEach(cb => cb.checked = checked);
+      updateSelectedCount();
+    }
+
+    function updateSelectedCount() {
+      const count = document.querySelectorAll('.prod-select:checked').length;
+      document.getElementById('selectedCount').innerText = `${count} Selected`;
+    }
+
+    function openPrintModal() {
+      const selectedIds = Array.from(document.querySelectorAll('.prod-select:checked')).map(cb => parseInt(cb.value));
+      if (selectedIds.length === 0) { alert('Select at least one product.'); return; }
+
+      const template = document.getElementById('printTemplateSelect').value;
+      const previewContainer = document.getElementById('printPreviewContainer');
+      const printableArea = document.getElementById('printableArea');
+      previewContainer.innerHTML = '';
+      printableArea.innerHTML = '';
+
+      const itemsToPrint = allProducts.filter(p => selectedIds.includes(p.id));
+
+      itemsToPrint.forEach((p, idx) => {
+        const basePrice = (p.selling_price / 1.15).toFixed(2);
+        const vatAmount = (p.selling_price - basePrice).toFixed(2);
+        const cipher = encodeCost(p.cost_price);
+        const cipherBadge = cipher ? `<span class="tag-cipher">${cipher}</span>` : '';
+        const itemCodeBadge = p.item_code ? `<span class="tag-meta-badge">PLU: ${p.item_code}</span>` : '';
+
+        let tagHTML = '';
+
+        if (template === 'shelf_1_5x3') {
+          tagHTML = `
+            <div class="shelf-tag-1_5x3">
+              <div class="tag-header-ar">${p.name_ar || p.name_en}</div>
+              <div class="tag-header-en">${p.name_en}</div>
+              <div class="tag-price-row">
+                <div class="tag-price-main">${p.selling_price.toFixed(2)} <span>SAR</span></div>
+                <div class="tag-vat-note">
+                  ${cipherBadge} شامل الضريبة 15%<br>
+                  Base: ${basePrice} | VAT: ${vatAmount}
+                </div>
+              </div>
+              <div class="tag-barcode-wrap">
+                <svg id="barcode_prev_${idx}"></svg>
+                <div style="display:flex; gap:4px; align-items:center;">
+                  ${itemCodeBadge}
+                  <span class="tag-meta-badge">${p.unit}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        } else {
+          tagHTML = `
+            <div class="small-tag-garment">
+              <div class="p-name">${p.name_en}</div>
+              <div class="p-price">${p.selling_price.toFixed(2)} SAR</div>
+              <svg id="barcode_prev_${idx}"></svg>
+              <div class="p-meta">
+                <span>PLU: ${p.item_code || p.id}</span>
+                <span>${p.unit}</span>
+              </div>
+            </div>
+          `;
+        }
+
+        previewContainer.insertAdjacentHTML('beforeend', tagHTML);
+        printableArea.insertAdjacentHTML('beforeend', tagHTML);
+
+        setTimeout(() => {
+          try {
+            JsBarcode(`#barcode_prev_${idx}`, p.barcode1, {
+              format: "CODE128",
+              displayValue: template === 'shelf_1_5x3',
+              fontSize: 10,
+              margin: 0,
+              height: 26
+            });
+          } catch(e) {}
+        }, 50);
+      });
+
+      document.getElementById('printModal').style.display = 'flex';
+    }
+
+    function closePrintModal() { document.getElementById('printModal').style.display = 'none'; }
+
+    function exportToCSV() {
+      if (allProducts.length === 0) { alert('No products to export.'); return; }
+      let csv = 'ItemCode,Barcode1,Barcode2,Barcode3,NameEN,NameAR,Category,Unit,CostPrice,SellPrice,Stock\n';
+      allProducts.forEach(p => {
+        csv += `"${p.item_code||''}","${p.barcode1}","${p.barcode2||''}","${p.barcode3||''}","${p.name_en}","${p.name_ar||''}","${p.category}","${p.unit}",${p.cost_price},${p.selling_price},${p.stock_quantity}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = window.URL.createObjectURL(blob);
+      a.download = `products_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+    }
+
+    function importCSV(evt) {
+      const file = evt.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const text = e.target.result;
+        const rows = text.split(/\r?\n/).filter(r => r.trim() !== '');
+        if (rows.length < 2) {
+          alert('CSV file is empty or missing data rows.');
+          return;
+        }
+
+        const parseCSVLine = (line) => {
+          const res = [];
+          let cur = '';
+          let inQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              res.push(cur.trim());
+              cur = '';
+            } else {
+              cur += char;
+            }
+          }
+          res.push(cur.trim());
+          return res.map(val => val.replace(/^["']|["']$/g, '').trim());
+        };
+
+        const headers = parseCSVLine(rows[0]).map(h => h.toLowerCase().replace(/\r/g, ''));
+
+        const idxCode = headers.findIndex(h => h.includes('code') || h.includes('plu'));
+        const idxB1 = headers.findIndex(h => h === 'barcode1' || h === 'barcode' || h === 'barcode_1');
+        const idxB2 = headers.findIndex(h => h === 'barcode2' || h === 'barcode_2');
+        const idxB3 = headers.findIndex(h => h.includes('barcode3'));
+        const idxNameEn = headers.findIndex(h => h.includes('nameen') || h.includes('name_en') || h.includes('english') || h.includes('name') || h.includes('description'));
+        const idxNameAr = headers.findIndex(h => h.includes('namear') || h.includes('name_ar') || h.includes('arabic'));
+        const idxCat = headers.findIndex(h => h.includes('cat'));
+        const idxUnit = headers.findIndex(h => h.includes('unit'));
+        const idxCost = headers.findIndex(h => h === 'costprice' || h === 'cost_price' || h === 'cost');
+        const idxSell = headers.findIndex(h => h === 'sellprice' || h === 'selling_price' || h === 'sell' || h === 'price' || h === 'rate');
+        const idxStock = headers.findIndex(h => h === 'stock' || h.includes('stock') || h.includes('qty'));
+
+        const itemsBatch = [];
+
+        for (let i = 1; i < rows.length; i++) {
+          const cols = parseCSVLine(rows[i]);
+          if (cols.length < 2) continue;
+
+          const nameEnVal = (idxNameEn !== -1 && cols[idxNameEn]) ? cols[idxNameEn] : ('ITEM ' + i);
+          const b1 = (idxB1 !== -1 && cols[idxB1]) ? cols[idxB1] : ('20' + Math.floor(10000000 + Math.random() * 90000000));
+          const costVal = idxCost !== -1 ? parseFloat(cols[idxCost]) : 0;
+          const sellVal = idxSell !== -1 ? parseFloat(cols[idxSell]) : 0;
+
+          itemsBatch.push({
+            item_code: (idxCode !== -1 && cols[idxCode]) ? cols[idxCode] : null,
+            barcode1: b1.toUpperCase(),
+            barcode2: (idxB2 !== -1 && cols[idxB2]) ? cols[idxB2].toUpperCase() : null,
+            barcode3: (idxB3 !== -1 && cols[idxB3]) ? cols[idxB3].toUpperCase() : null,
+            name_en: nameEnVal.toUpperCase(),
+            name_ar: (idxNameAr !== -1 && cols[idxNameAr]) ? cols[idxNameAr] : '',
+            category: (idxCat !== -1 && cols[idxCat]) ? cols[idxCat].toUpperCase() : 'GENERAL',
+            unit: (idxUnit !== -1 && cols[idxUnit]) ? cols[idxUnit].toUpperCase() : 'PCS',
+            cost_price: !isNaN(costVal) ? costVal : 0,
+            selling_price: !isNaN(sellVal) ? sellVal : 0,
+            stock_quantity: (idxStock !== -1 && !isNaN(parseFloat(cols[idxStock]))) ? parseFloat(cols[idxStock]) : 0,
+            vat_rate: 15.00
+          });
+        }
+
+        if (itemsBatch.length === 0) {
+          alert('No valid products found in CSV.');
+          return;
+        }
+
+        try {
+          const res = await fetch(`${getApiBase()}/api/products/bulk-import`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: itemsBatch })
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert(`🎉 ബൾക്ക് ഇംപോർട്ട് പൂർത്തിയായി! വിജയകരമായി ${data.count} ഐറ്റംസ് ചേർത്തു.`);
+            loadProducts();
+          } else {
+            alert('Import Error: ' + data.error);
+          }
+        } catch(err) {
+          alert('Failed to connect to server for bulk import: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    window.onload = async () => {
+      await loadStoreCipher();
+      await loadProducts();
+      calculateLiveProfit();
+    };
+  </script>
+</body>
+</html>

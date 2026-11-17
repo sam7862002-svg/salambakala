@@ -1,0 +1,18 @@
+<!-- 80mm / 58mm Thermal Receipt Template -->
+<div class="thermal-receipt" style="width: 80mm; font-family: monospace; font-size: 12px; padding: 5mm;">
+  <div style="text-align: center;">
+    <h3>{{STORE_NAME_EN}}</h3>
+    <h4>{{STORE_NAME_AR}}</h4>
+    <p>VAT: {{VAT_NUMBER}} | CR: {{CR_NUMBER}}</p>
+    <hr>
+  </div>
+  <div>Invoice: {{INVOICE_NUMBER}} | Date: {{DATE}}</div>
+  <hr>
+  <table style="width:100%; font-size:11px;">
+    <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+    <tbody>{{ITEMS_ROWS}}</tbody>
+  </table>
+  <hr>
+  <div style="display:flex; justify-content:space-between;"><b>Grand Total:</b><b>{{GRAND_TOTAL}} SAR</b></div>
+  <div style="display:flex; justify-content:space-between;"><small>VAT Included (15%):</small><small>{{VAT_TOTAL}} SAR</small></div>
+</div>

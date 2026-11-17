@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retail POS & Store Management</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f8fafc; color: #0f172a; padding: 30px 20px; }
+    .header { text-align: center; margin-bottom: 25px; }
+    .header h1 { font-size: 28px; font-weight: 700; color: #0f172a; }
+    .header p { color: #64748b; font-size: 15px; margin-top: 6px; }
+
+    .network-bar {
+      max-width: 1100px;
+      margin: 0 auto 25px auto;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .status-badge {
+      font-size: 13px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge-server { background: #dcfce7; color: #15803d; }
+    .badge-client { background: #dbeafe; color: #1d4ed8; }
+
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 24px;
+      text-decoration: none;
+      color: inherit;
+      border: 1px solid #e2e8f0;
+      text-align: center;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      cursor: pointer;
+    }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 12px 20px rgba(0,0,0,0.06); border-color: #cbd5e1; }
+    .icon { font-size: 40px; margin-bottom: 14px; }
+    .card h2 { font-size: 19px; font-weight: 600; margin-bottom: 4px; color: #1e293b; }
+    .card h3 { font-size: 15px; color: #2563eb; direction: rtl; margin-bottom: 10px; font-weight: 500; }
+    .card p { font-size: 13px; color: #64748b; line-height: 1.4; }
+
+    .config-input { border: 1px solid #94a3b8; border-radius: 6px; padding: 5px 8px; font-size: 13px; }
+    .btn-cfg { background: #2563eb; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+
+    /* Password Modal */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
+    .modal-box { background: #fff; border-radius: 12px; padding: 24px; width: 340px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+    .modal-box h3 { margin-bottom: 10px; font-size: 17px; color: #0f172a; }
+  </style>
+</head>
+<body>
+
+  <div class="network-bar">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span id="roleBadge" class="status-badge badge-server">🖥️ MAIN SERVER PC</span>
+      <span id="connStatus" style="font-size:12px; color:#64748b;">(Online)</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <label style="font-size:12px; font-weight:bold; color:#475569;">PC Role:</label>
+      <select id="pcRoleSelect" class="config-input" style="width:130px;" onchange="handleRoleChange()">
+        <option value="server">Server PC</option>
+        <option value="terminal">Terminal Client</option>
+      </select>
+      <div id="ipWrap" style="display:none; align-items:center; gap:6px;">
+        <input type="text" id="serverIpInput" class="config-input" style="width:160px;" placeholder="Server IP e.g. 192.168.1.15">
+        <button type="button" class="btn-cfg" onclick="saveTerminalIp()">Save IP</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="header">
+    <h1 id="store_name_en">Store Dashboard</h1>
+    <p id="store_name_ar">لوحة التحكم الرئيسية | Port 5050</p>
+  </div>
+
+  <div class="grid-container">
+    <a href="pos.html" class="card">
+      <div class="icon">🛒</div>
+      <h2>POS Billing</h2>
+      <h3>نقطة البيع</h3>
+      <p>Offline-ready billing, barcode scanning, thermal & A4 invoice</p>
+    </a>
+
+    <a href="products.html" class="card">
+      <div class="icon">📦</div>
+      <h2>Products & Stock</h2>
+      <h3>المنتجات والمخزون</h3>
+      <p>Bilingual item catalog, 4-digit PLU, 3 Barcodes, Edit & Tags</p>
+    </a>
+
+    <a href="purchase.html" class="card">
+      <div class="icon">🚚</div>
+      <h2>Purchases</h2>
+      <h3>المشتريات</h3>
+      <p>Supplier bills, stock in and cost price management</p>
+    </a>
+
+    <a href="parties.html" class="card">
+      <div class="icon">👥</div>
+      <h2>Parties & Ledger</h2>
+      <h3>العملاء والموردين</h3>
+      <p>Customer credit (കടം), supplier ledger & debt settlement</p>
+    </a>
+
+    <a href="expenses.html" class="card">
+      <div class="icon">💸</div>
+      <h2>Daily Expenses</h2>
+      <h3>المصروفات اليومية</h3>
+      <p>Shop rent, electricity, tea, staff salary & daily costs</p>
+    </a>
+
+    <a href="reports.html" class="card">
+      <div class="icon">📊</div>
+      <h2>Monthly Reports</h2>
+      <h3>التقارير الشهرية</h3>
+      <p>Monthly Sales, Net Profit/Loss, and VAT return statement</p>
+    </a>
+
+    <a href="settings.html" class="card">
+      <div class="icon">⚙️</div>
+      <h2>Store Settings</h2>
+      <h3>إعدادات المتجر</h3>
+      <p>Store profile, Local Printers, ZATCA Phase 2 Setup</p>
+    </a>
+
+    <!-- NEW SECURED ADMIN TOOLS CARD -->
+    <div class="card" style="border-top: 4px solid #dc2626;" onclick="promptAdminAccess()">
+      <div class="icon">🔒</div>
+      <h2 style="color: #dc2626;">Admin & Tools</h2>
+      <h3>إدارة النظام والتصميم</h3>
+      <p>Template Designer, Fresh Database, Backup & Master Password</p>
+    </div>
+  </div>
+
+  <!-- PASSWORD MODAL -->
+  <div id="passwordModal" class="modal">
+    <div class="modal-box">
+      <h3>🔑 Master Key Protected</h3>
+      <p style="font-size:12px; color:#64748b; margin-bottom:14px;">Enter Admin Password to access Tools & Reset</p>
+      <input type="password" id="adminPassInput" class="config-input" style="width:100%; padding:9px; font-size:15px; text-align:center; margin-bottom:12px;" placeholder="Password">
+      <div style="display:flex; justify-content:center; gap:8px;">
+        <button type="button" class="btn-cfg" style="background:#64748b;" onclick="closePassModal()">Cancel</button>
+        <button type="button" class="btn-cfg" style="background:#dc2626;" onclick="verifyAndOpenAdmin()">Unlock</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function getApiBase() {
+      const role = localStorage.getItem('pos_machine_role') || 'server';
+      const ip = localStorage.getItem('pos_server_ip') || '';
+      return (role === 'terminal' && ip) ? `http://${ip}:5050` : '';
+    }
+
+    function initNetworkConfig() {
+      const role = localStorage.getItem('pos_machine_role') || 'server';
+      const ip = localStorage.getItem('pos_server_ip') || '';
+      document.getElementById('pcRoleSelect').value = role;
+      document.getElementById('serverIpInput').value = ip;
+
+      const badge = document.getElementById('roleBadge');
+      const ipWrap = document.getElementById('ipWrap');
+
+      if (role === 'terminal') {
+        badge.className = 'status-badge badge-client';
+        badge.innerText = `💻 TERMINAL CLIENT (${ip || 'No IP Set'})`;
+        ipWrap.style.display = 'flex';
+      } else {
+        badge.className = 'status-badge badge-server';
+        badge.innerText = '🖥️ MAIN SERVER PC';
+        ipWrap.style.display = 'none';
+      }
+    }
+
+    function handleRoleChange() {
+      const role = document.getElementById('pcRoleSelect').value;
+      localStorage.setItem('pos_machine_role', role);
+      initNetworkConfig();
+    }
+
+    function saveTerminalIp() {
+      const ip = document.getElementById('serverIpInput').value.trim();
+      if (!ip) { alert('Please enter Server IP'); return; }
+      localStorage.setItem('pos_server_ip', ip);
+      initNetworkConfig();
+      alert('Terminal configured to connect to: ' + ip);
+      location.reload();
+    }
+
+    initNetworkConfig();
+
+    fetch(`${getApiBase()}/api/settings`)
+      .then(r => r.json())
+      .then(res => {
+        if (res.success && res.data) {
+          if (res.data.company_name_en) document.getElementById('store_name_en').innerText = res.data.company_name_en;
+          if (res.data.company_name_ar) document.getElementById('store_name_ar').innerText = res.data.company_name_ar + ' | Port 5050';
+        }
+      })
+      .catch(e => {
+        document.getElementById('connStatus').innerText = '(Server Offline)';
+        document.getElementById('connStatus').style.color = '#ef4444';
+      });
+
+    // Password Prompt Handlers
+    function promptAdminAccess() {
+      document.getElementById('adminPassInput').value = '';
+      document.getElementById('passwordModal').style.display = 'flex';
+      document.getElementById('adminPassInput').focus();
+    }
+
+    function closePassModal() {
+      document.getElementById('passwordModal').style.display = 'none';
+    }
+
+    async function verifyAndOpenAdmin() {
+      const pass = document.getElementById('adminPassInput').value;
+      if (!pass) { alert('Please enter password'); return; }
+
+      try {
+        const res = await fetch(`${getApiBase()}/api/settings/verify-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pass })
+        });
+        const j = await res.json();
+        if (j.success) {
+          sessionStorage.setItem('admin_authenticated', 'true');
+          window.location.href = 'admin_tools.html';
+        } else {
+          alert('❌ ' + (j.error || 'Wrong Password'));
+        }
+      } catch (err) {
+        alert('Server connection error');
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Software Activation</title>
+    <style>
+      body { font-family: Arial; background: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+      .box { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 400px; text-align: center; }
+      input { width: 100%; padding: 10px; margin: 10px 0; font-size: 16px; box-sizing: border-box; }
+      button { background: #007bff; color: white; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer; border-radius: 4px; width: 100%; }
+      button:hover { background: #0056b3; }
+      .msg { margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>🔒 POS Software Activation</h2>
+        <p>This computer is not licensed.</p>
+        <p>Your Machine ID:</p>
+        <input type="text" id="machineId" readonly style="background:#e9ecef; text-align:center; font-weight:bold;" />
+        <p>Enter Activation Key:</p>
+        <input type="text" id="licenseKey" placeholder="XXXX-XXXX-XXXX-XXXX" />
+        <button onclick="activate()">Activate Now</button>
+        <div class="msg" id="msg"></div>
+    </div>
+<script>
+  fetch('/api/license/status').then(r => r.json()).then(d => {
+    document.getElementById('machineId').value = d.machineId;
+  });
+
+  function activate() {
+    const key = document.getElementById('licenseKey').value;
+    fetch('/api/license/activate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key })
+    }).then(r => r.json()).then(d => {
+      const msg = document.getElementById('msg');
+      if(d.success) {
+        msg.style.color = 'green';
+        msg.innerText = 'Activated Successfully! Redirecting...';
+        setTimeout(() => window.location.href = '/index.html', 1500);
+      } else {
+        msg.style.color = 'red';
+        msg.innerText = d.error || 'Activation Failed';
+      }
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Barcode Label (80mm Thermal)</title>
+  <style>
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+    }
+    
+    @page {
+      size: 80mm auto;
+      margin: 0;
+    }
+
+    body {
+      width: 72mm;
+      margin: 0 auto;
+      padding: 5px 4px;
+      background: #fff;
+      color: #000;
+      overflow: hidden;
+      text-align: center;
+    }
+
+    .barcode-container {
+      border: 1px dashed #000;
+      border-radius: 4px;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .store-header {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      line-height: 1.2;
+      max-width: 95%;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .item-title {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      line-height: 1.2;
+      max-width: 95%;
+      word-break: break-word;
+      margin: 1px 0;
+    }
+
+    .barcode-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 3px 0;
+      width: 100%;
+    }
+
+    #barcode_svg {
+      width: 100%;
+      max-width: 250px;
+      height: 48px;
+    }
+
+    .bottom-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      font-size: 10.5px;
+      font-weight: bold;
+      border-top: 1px solid #000;
+      padding-top: 3px;
+      margin-top: 2px;
+    }
+
+    .price-tag {
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+    }
+
+    @media print {
+      body { width: 72mm; margin: 0; padding: 4px; }
+      .barcode-container { page-break-inside: avoid; }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+</head>
+<body>
+
+  <div class="barcode-container">
+    <div class="store-header" id="disp_store_name">STORE NAME</div>
+    <div class="item-title" id="disp_item_name">ITEM NAME LOADING...</div>
+
+    <div class="barcode-wrap">
+      <svg id="barcode_svg"></svg>
+    </div>
+
+    <div class="bottom-info">
+      <span id="disp_item_code">PLU: --</span>
+      <span class="price-tag">SAR <span id="disp_item_price">0.00</span></span>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get('id');
+    const autoPrint = params.get('autoprint') === '1';
+
+    window.onload = async () => {
+      try {
+        const sRes = await fetch('/api/settings');
+        const sJson = await sRes.json();
+        if (sJson.success && sJson.data && sJson.data.company_name_en) {
+          document.getElementById('disp_store_name').innerText = sJson.data.company_name_en;
+        }
+      } catch(e) {}
+
+      if (!productId) return;
+
+      try {
+        const res = await fetch(`/api/products/${productId}`);
+        const j = await res.json();
+        if (j.success && j.data) {
+          const p = j.data;
+          document.getElementById('disp_item_name').innerText = p.name_en || 'ITEM';
+          document.getElementById('disp_item_code').innerText = p.item_code ? `PLU: ${p.item_code}` : (p.unit || 'PCS');
+          document.getElementById('disp_item_price').innerText = parseFloat(p.selling_price || 0).toFixed(2);
+
+          const bCode = p.barcode1 || p.item_code || '00000000';
+
+          // Significantly enlarged barcode width (1.95) and height (44px) with clear text for reliable scanner reading
+          JsBarcode("#barcode_svg", bCode, {
+            format: "CODE128",
+            width: 1.95,
+            height: 44,
+            displayValue: true,
+            fontSize: 11,
+            textMargin: 3,
+            margin: 0
+          });
+
+          if (autoPrint) {
+            setTimeout(() => {
+              window.print();
+            }, 400);
+          }
+        }
+      } catch(e) {
+        console.error('Failed to load barcode item data', e);
+      }
+    };
+  </script>
+</body>
+</html>

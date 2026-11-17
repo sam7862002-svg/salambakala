@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Store Settings & Multi-Printer Setup</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f8fafc; color: #1e293b; padding: 30px 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+    .btn-back { text-decoration: none; background: #e2e8f0; color: #334155; padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; }
+    
+    .btn-zatca { 
+      text-decoration: none; 
+      background: #059669; 
+      color: #fff; 
+      padding: 8px 16px; 
+      border-radius: 6px; 
+      font-size: 14px; 
+      font-weight: 600; 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 6px;
+    }
+    .btn-zatca:hover { background: #047857; }
+
+    .box { background: #ffffff; border-radius: 10px; border: 1px solid #e2e8f0; padding: 22px; margin-bottom: 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+    .box h3 { font-size: 17px; margin-bottom: 14px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; color: #0f172a; display: flex; align-items: center; justify-content: space-between; }
+    
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+    .form-group input, .form-group select { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; }
+    
+    .btn-action { background: #2563eb; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; text-decoration: none; display: inline-block; }
+    .btn-action:hover { background: #1d4ed8; }
+    .btn-save-all { background: #16a34a; color: #fff; border: none; padding: 13px 32px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; display: block; margin: 20px auto; }
+    .btn-save-all:hover { background: #15803d; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="top-bar">
+      <h2>⚙️ Store Settings & Multi-Printer Setup</h2>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <a href="zatca_phase2.html" class="btn-zatca">🛡️ ZATCA Phase 2 Setup</a>
+        <a href="index.html" class="btn-back">⬅ Dashboard</a>
+      </div>
+    </div>
+
+    <!-- 0. NETWORK TERMINAL CONFIGURATION & CUSTOM SERVER PORT -->
+    <div class="box" style="border-left: 4px solid #2563eb;">
+      <h3><span>🖥️ Machine Role, Network Link & Port / وضعية هذا الجهاز والمنفذ</span></h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Machine Mode</label>
+          <select id="pos_machine_role" onchange="toggleServerIpField()">
+            <option value="server">Main Server PC (الجهاز الرئيسي)</option>
+            <option value="terminal">Billing Terminal PC (نقطة بيع فرعية)</option>
+          </select>
+        </div>
+        <div class="form-group" id="serverIpGroup">
+          <label>Main Server IP Address (e.g. 192.168.100.46)</label>
+          <input type="text" id="pos_server_ip" placeholder="192.168.100.46">
+        </div>
+        <div class="form-group">
+          <label>Application Server Port (Default: 6060)</label>
+          <input type="number" id="server_port" value="6060" placeholder="5050">
+        </div>
+        <div class="form-group">
+          <label>Counter / Terminal ID (e.g. 1, 2, 3)</label>
+          <input type="text" id="pos_terminal_id" value="1" placeholder="1">
+          <small style="color:#64748b; font-size:11px;">Billing Counter Number (T1, T2) / رقم الكاشير</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1. LOCAL PRINTER SELECTION FOR THIS SPECIFIC MACHINE -->
+    <div class="box">
+      <h3>
+        <span>Client Local Printers / إعدادات الطابعات المحلية</span>
+        <button type="button" class="btn-action" style="font-size: 11px; padding: 4px 8px;" onclick="loadLocalPrinters()">🔄 Scan Local Printers</button>
+      </h3>
+      <p style="font-size: 12px; color: #64748b; margin-bottom: 12px;">
+        Select the Thermal (80mm), Barcode, and A4 printers connected to this PC. / اختر الطابعات المتصلة بهذا الجهاز.
+      </p>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>POS Thermal Printer (80mm / Shelf Tags)</label>
+          <select id="local_printer_pos">
+            <option value="">-- Select Local Thermal Printer --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>🏷️ Barcode Label Printer (1x2 inch)</label>
+          <select id="local_printer_barcode">
+            <option value="">-- Select Local Barcode Printer --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Official Invoice Printer (A4)</label>
+          <select id="local_printer_a4">
+            <option value="">-- Select Local A4 Printer --</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. STORE PROFILE & TAX INFO & SECRET COST CIPHER KEY -->
+    <div class="box">
+      <h3>1. Store Identity, Tax Info & Secret Cipher / بيانات المتجر والضريبة</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Store Name (English) *</label>
+          <input type="text" id="company_name_en" placeholder="e.g. AL RUGAMA TRADING">
+        </div>
+        <div class="form-group">
+          <label>Store Name (Arabic / تلقائي) *</label>
+          <input type="text" id="company_name_ar" style="direction: rtl;" placeholder="اسم المتجر بالعربية">
+        </div>
+        <div class="form-group"><label>VAT Number (15 Digits)</label><input type="text" id="vat_number" maxlength="15" placeholder="300000000000003"></div>
+        <div class="form-group"><label>Commercial Reg (CR)</label><input type="text" id="cr_number" maxlength="10"></div>
+        <div class="form-group"><label>Store Phone</label><input type="text" id="phone"></div>
+        <div class="form-group"><label>Currency</label><input type="text" id="currency" value="SAR"></div>
+        <div class="form-group" style="background: #f8fafc; padding: 6px; border: 1px dashed #38bdf8; border-radius: 6px;">
+          <label style="color: #0284c7; font-weight: bold;">🔐 Secret Cost Cipher Key (10 Letters)</label>
+          <input type="text" id="cost_cipher_key" maxlength="10" placeholder="e.g. COMPUTERSX" style="text-transform: uppercase; font-weight: bold; letter-spacing: 2px;">
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. OFFICIAL STORE BANK DETAILS (FOR A4 INVOICES) -->
+    <div class="box" style="border-left: 4px solid #0284c7;">
+      <h3>2. Store Bank Details (For A4 Invoices) / الحساب البنكي</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Bank Name (اسم البنك)</label>
+          <input type="text" id="bank_name" placeholder="e.g. Al Rajhi Bank / SNB / Riyadh Bank">
+        </div>
+        <div class="form-group">
+          <label>Account Number (رقم الحساب)</label>
+          <input type="text" id="account_number" placeholder="e.g. 123456789012345">
+        </div>
+        <div class="form-group">
+          <label>IBAN (رقم الآيبان - SA...)</label>
+          <input type="text" id="iban" placeholder="SA..." style="text-transform: uppercase; font-weight: bold;">
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. SAUDI NATIONAL ADDRESS -->
+    <div class="box" style="border-left: 4px solid #059669;">
+      <h3>3. Saudi National Address / العنوان الوطني السعودي (Bilingual)</h3>
+      <div class="form-grid">
+        <div class="form-group"><label>Short Address (e.g. JARC6943)</label><input type="text" id="short_address"></div>
+        <div class="form-group"><label>Building No (رقم المبنى)</label><input type="text" id="building_no"></div>
+        <div class="form-group"><label>Postal Code (الرمز البريدي)</label><input type="text" id="postal_code"></div>
+        <div class="form-group"><label>Street (English)</label><input type="text" id="street_en"></div>
+        <div class="form-group"><label>Street (Arabic / اسم الشارع)</label><input type="text" id="street_ar" style="direction: rtl;"></div>
+        <div class="form-group"><label>District (English)</label><input type="text" id="district_en"></div>
+        <div class="form-group"><label>District (Arabic / الحي)</label><input type="text" id="district_ar" style="direction: rtl;"></div>
+        <div class="form-group"><label>City (English)</label><input type="text" id="city_en" value="Jeddah"></div>
+        <div class="form-group"><label>City (Arabic / المدينة)</label><input type="text" id="city_ar" style="direction: rtl;" value="جدة"></div>
+      </div>
+    </div>
+
+    <!-- 5. STORE SEAL UPLOAD -->
+    <div class="box">
+      <h3>Official Store Seal & Stamp / ختم المتجر الرسمي</h3>
+      <div style="display:flex; align-items:center; gap:20px;">
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#475569; display:block; margin-bottom:6px;">Upload Seal Image (PNG):</label>
+          <input type="file" id="seal_file_input" accept="image/*" onchange="previewAndUploadSeal(this)">
+        </div>
+        <div id="disp_seal_preview" style="border:1px dashed #cbd5e1; padding:6px; border-radius:6px; min-width:110px; min-height:60px; display:flex; align-items:center; justify-content:center;">
+          <span style="font-size:11px; color:#94a3b8;">No Seal</span>
+        </div>
+      </div>
+    </div>
+
+        <!-- 6. SUPABASE CLOUD SYNC & MULTI-SHOP QR SETUP -->
+    <div class="box" style="border-left: 4px solid #7c3aed;">
+      <h3>
+        <span>☁️ Supabase Cloud Sync & Mobile App Setup / المزامنة السحابية</span>
+        <button type="button" class="btn-action" style="background: #7c3aed; font-size: 12px;" onclick="generateMobileSetupQR()">📱 Generate Mobile Setup QR</button>
+      </h3>
+      <p style="font-size: 12px; color: #64748b; margin-bottom: 12px;">
+        കടയിലെ ഡാറ്റാബേസ് ക്ലൗഡിലേക്ക് സിങ്ക് ചെയ്യാനും മൊബൈൽ ആപ്പിൽ കണക്ട് ചെയ്യാനും നിങ്ങളുടെ Supabase Project URL, Anon Key എന്നിവ നൽകുക.
+      </p>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Supabase Project URL (e.g. https://xyz.supabase.co)</label>
+          <input type="text" id="supabase_url" placeholder="https://xxxxxxxxxxxx.supabase.co">
+        </div>
+        <div class="form-group">
+          <label>Supabase Anon Public Key</label>
+          <input type="password" id="supabase_key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+        </div>
+        <div class="form-group">
+          <label>Mobile App Shop Login PIN (4 Digits)</label>
+          <input type="text" id="mobile_shop_pin" maxlength="4" value="1111" placeholder="e.g. 1111">
+          <small style="color:#64748b; font-size:11px;">4-digit PIN to unlock this shop in Mobile App / رمز الدخول المكون من 4 أرقام للتطبيق</small>
+        </div>
+      </div>
+
+      <!-- QR Code Display Area -->
+      <div id="mobileQrContainer" style="display:none; margin-top:15px; padding:15px; background:#f8fafc; border:1px dashed #7c3aed; border-radius:8px; text-align:center;">
+        <div style="font-size:13px; font-weight:700; color:#4c1d95; margin-bottom:8px;">📲 Scan this QR Code inside SAMPOS Mobile App (Shops -> Scan Shop QR)</div>
+        <img id="mobileQrImg" src="" alt="Mobile Setup QR" style="width:200px; height:200px; border:4px solid #fff; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+        <div style="font-size:11px; color:#64748b; margin-top:6px;" id="mobileQrCaption"></div>
+      </div>
+    </div>
+
+    <button type="button" class="btn-save-all" onclick="saveAllSettings()">💾 Save All Settings / حفظ جميع الإعدادات</button>
+  </div>
+
+  <script>
+    function getApiBase() {
+      const role = localStorage.getItem('pos_machine_role') || 'server';
+      const ip = localStorage.getItem('pos_server_ip') || '';
+      const port = localStorage.getItem('pos_server_port') || window.location.port || '5050';
+      return (role === 'terminal' && ip) ? `http://${ip}:${port}` : '';
+    }
+
+    function toggleServerIpField() {
+      const role = document.getElementById('pos_machine_role').value;
+      document.getElementById('serverIpGroup').style.display = (role === 'terminal') ? 'block' : 'none';
+    }
+
+    async function loadLocalPrinters() {
+      let printerNames = [];
+
+      if (window.require) {
+        try {
+          const { ipcRenderer } = window.require('electron');
+          printerNames = await ipcRenderer.invoke('get-local-printers');
+        } catch(e) {}
+      }
+
+      if (!printerNames || printerNames.length === 0) {
+        try {
+          const res = await fetch(`${getApiBase()}/api/settings/system-printers`);
+          const j = await res.json();
+          if (j.success && j.printers) printerNames = j.printers;
+        } catch(e) {}
+      }
+
+      const pPos = document.getElementById('local_printer_pos');
+      const pBarcode = document.getElementById('local_printer_barcode');
+      const pA4 = document.getElementById('local_printer_a4');
+      const savedPos = localStorage.getItem('pos_thermal_printer') || '';
+      const savedBarcode = localStorage.getItem('pos_barcode_printer') || '';
+      const savedA4 = localStorage.getItem('pos_a4_printer') || '';
+
+      pPos.innerHTML = '<option value="">-- Select Local Thermal Printer --</option>';
+      if (pBarcode) pBarcode.innerHTML = '<option value="">-- Select Local Barcode Printer --</option>';
+      pA4.innerHTML = '<option value="">-- Select Local A4 Printer --</option>';
+
+      printerNames.forEach(p => {
+        pPos.innerHTML += `<option value="${p}" ${p === savedPos ? 'selected' : ''}>${p}</option>`;
+        if (pBarcode) pBarcode.innerHTML += `<option value="${p}" ${p === savedBarcode ? 'selected' : ''}>${p}</option>`;
+        pA4.innerHTML += `<option value="${p}" ${p === savedA4 ? 'selected' : ''}>${p}</option>`;
+      });
+    }
+
+    async function loadData() {
+      const role = localStorage.getItem('pos_machine_role') || 'server';
+      const ip = localStorage.getItem('pos_server_ip') || '';
+      const savedPort = localStorage.getItem('pos_server_port') || '6060';
+
+      document.getElementById('pos_machine_role').value = role;
+      document.getElementById('pos_server_ip').value = ip;
+      document.getElementById('server_port').value = savedPort;
+      document.getElementById('pos_terminal_id').value = localStorage.getItem('pos_terminal_id') || '1';
+      toggleServerIpField();
+
+      await loadLocalPrinters();
+
+      try {
+        const res = await fetch(`${getApiBase()}/api/settings`);
+        const j = await res.json();
+        if (j.success && j.data) {
+          const d = j.data;
+          document.getElementById('company_name_en').value = d.company_name_en || '';
+          document.getElementById('company_name_ar').value = d.company_name_ar || '';
+          document.getElementById('vat_number').value = d.vat_number || '';
+          document.getElementById('cr_number').value = d.cr_number || '';
+          document.getElementById('phone').value = d.phone || '';
+          document.getElementById('currency').value = d.currency || 'SAR';
+          document.getElementById('cost_cipher_key').value = d.cost_cipher_key || 'COMPUTERSX';
+          
+          document.getElementById('bank_name').value = d.bank_name || '';
+          document.getElementById('account_number').value = d.account_number || '';
+          document.getElementById('iban').value = d.iban || '';
+          if (d.server_port) document.getElementById('server_port').value = d.server_port;
+
+          document.getElementById('short_address').value = d.short_address || '';
+          document.getElementById('building_no').value = d.building_no || '';
+          document.getElementById('postal_code').value = d.postal_code || '';
+          document.getElementById('street_en').value = d.street_en || '';
+          document.getElementById('street_ar').value = d.street_ar || '';
+          document.getElementById('district_en').value = d.district_en || '';
+          document.getElementById('district_ar').value = d.district_ar || '';
+          document.getElementById('city_en').value = d.city_en || 'Jeddah';
+          document.getElementById('city_ar').value = d.city_ar || 'جدة';
+          document.getElementById('supabase_url').value = d.supabase_url || '';
+          document.getElementById('supabase_key').value = d.supabase_key || '';
+
+          if (d.store_seal_img) {
+            document.getElementById('disp_seal_preview').innerHTML = `<img src="${d.store_seal_img}" style="max-height:60px; max-width:120px;">`;
+          }
+          if (d.printer_barcode_name && !localStorage.getItem('pos_barcode_printer')) {
+            localStorage.setItem('pos_barcode_printer', d.printer_barcode_name);
+            const pBarcode = document.getElementById('local_printer_barcode');
+            if (pBarcode) pBarcode.value = d.printer_barcode_name;
+          }
+        }
+      } catch (err) {}
+    }
+
+    function previewAndUploadSeal(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const base64Img = e.target.result;
+        document.getElementById('disp_seal_preview').innerHTML = `<img src="${base64Img}" style="max-height:60px; max-width:120px;">`;
+
+        try {
+          const res = await fetch(`${getApiBase()}/api/settings/upload-seal`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sealImage: base64Img })
+          });
+          const j = await res.json();
+          if (j.success) {
+            alert('🎉 Store seal saved successfully! / تم حفظ ختم المتجر بنجاح!');
+          }
+        } catch (err) {
+          alert('Failed to upload seal');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function saveAllSettings() {
+      const role = document.getElementById('pos_machine_role').value;
+      const ip = document.getElementById('pos_server_ip').value.trim();
+      const port = document.getElementById('server_port').value.trim() || '5050';
+
+      localStorage.setItem('pos_machine_role', role);
+      localStorage.setItem('pos_server_ip', ip);
+      localStorage.setItem('pos_server_port', port);
+      localStorage.setItem('pos_terminal_id', document.getElementById('pos_terminal_id').value.trim() || '1');
+
+      const localPos = document.getElementById('local_printer_pos').value;
+      const localBarcode = document.getElementById('local_printer_barcode') ? document.getElementById('local_printer_barcode').value : '';
+      const localA4 = document.getElementById('local_printer_a4').value;
+      localStorage.setItem('pos_thermal_printer', localPos);
+      localStorage.setItem('pos_barcode_printer', localBarcode);
+      localStorage.setItem('pos_a4_printer', localA4);
+
+      const cipherKey = document.getElementById('cost_cipher_key').value.trim().toUpperCase() || 'COMPUTERSX';
+
+      const payload = {
+        company_name_en: document.getElementById('company_name_en').value,
+        company_name_ar: document.getElementById('company_name_ar').value,
+        vat_number: document.getElementById('vat_number').value,
+        cr_number: document.getElementById('cr_number').value,
+        phone: document.getElementById('phone').value,
+        currency: document.getElementById('currency').value,
+        cost_cipher_key: cipherKey,
+        bank_name: document.getElementById('bank_name').value,
+        account_number: document.getElementById('account_number').value,
+        iban: document.getElementById('iban').value,
+        server_port: parseInt(port, 10),
+        short_address: document.getElementById('short_address').value,
+        building_no: document.getElementById('building_no').value,
+        postal_code: document.getElementById('postal_code').value,
+        street_en: document.getElementById('street_en').value,
+        street_ar: document.getElementById('street_ar').value,
+        district_en: document.getElementById('district_en').value,
+        district_ar: document.getElementById('district_ar').value,
+        city_en: document.getElementById('city_en').value,
+        city_ar: document.getElementById('city_ar').value,
+        printer_pos_name: localPos,
+        printer_barcode_name: localBarcode,
+        printer_a4_name: localA4,
+        supabase_url: document.getElementById('supabase_url').value.trim(),
+        supabase_key: document.getElementById('supabase_key').value.trim()
+      };
+
+      // Save directly to Electron EXE configuration
+      if (window.require) {
+        try {
+          const { ipcRenderer } = window.require('electron');
+          await ipcRenderer.invoke('save-config', {
+            role: role,
+            serverIp: ip,
+            port: parseInt(port, 10) || 6060,
+            terminalId: document.getElementById('pos_terminal_id').value.trim() || '1'
+          });
+        } catch(err) {
+          console.error('Electron config save error:', err);
+        }
+      }
+
+      try {
+        const res = await fetch(`${getApiBase()}/api/settings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('✅ Settings saved successfully! Please restart the application. / تم حفظ الإعدادات بنجاح! يرجى إعادة تشغيل البرنامج.');
+          return;
+        }
+      } catch(e) {
+        alert('✅ Terminal settings saved on this machine! Please close and reopen the app. / تم حفظ إعدادات الجهاز بنجاح!');
+      }
+    }
+
+    function generateMobileSetupQR() {
+      const name = document.getElementById('company_name_en').value.trim() || 'My Shop';
+      const url = document.getElementById('supabase_url').value.trim();
+      const key = document.getElementById('supabase_key').value.trim();
+      const pin = document.getElementById('mobile_shop_pin').value.trim() || '1111';
+
+      if (!url || !key) {
+        alert('Please enter Supabase Project URL and Anon Key first! / يرجى إدخال رابط ومفتاح Supabase أولاً!');
+        return;
+      }
+      if (pin.length !== 4) {
+        alert('Please enter a 4-digit PIN (e.g. 1111) / يرجى إدخال رمز PIN من 4 أرقام');
+        return;
+      }
+
+      const qrPayload = JSON.stringify({ name, pin, url, key });
+      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrPayload)}`;
+      
+      document.getElementById('mobileQrImg').src = qrApiUrl;
+      document.getElementById('mobileQrCaption').innerText = `Shop: ${name} | Login PIN: ${pin}`;
+      document.getElementById('mobileQrContainer').style.display = 'block';
+    }
+
+    window.onload = loadData;
+  </script>
+</body>
+</html>

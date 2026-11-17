@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports & Financial Analytics</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f8fafc; color: #1e293b; padding: 20px 25px; }
+    .container { max-width: 1520px; margin: 0 auto; }
+
+    .store-brand-header {
+      background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 24px;
+      margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); display: flex;
+      justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;
+    }
+    .brand-left h1 { font-size: 22px; font-weight: 800; color: #0f172a; }
+    .brand-left h2 { font-size: 16px; font-weight: 600; color: #2563eb; direction: rtl; margin-top: 2px; }
+    .brand-info { font-size: 12.5px; color: #64748b; margin-top: 5px; line-height: 1.5; }
+    .brand-info b { color: #334155; }
+    .nav-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .btn-top {
+      text-decoration: none; background: #e2e8f0; color: #334155; padding: 7px 12px;
+      border-radius: 6px; font-size: 12.5px; font-weight: 600; border: 1px solid #cbd5e1; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .btn-top:hover { background: #cbd5e1; }
+    .btn-excel { background: #16a34a !important; color: #fff !important; border-color: #15803d !important; font-weight: bold; }
+    .btn-excel:hover { background: #15803d !important; }
+
+    .filter-bar {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 16px;
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .date-quick-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    .btn-quick-date {
+      background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 20px; padding: 5px 12px;
+      font-size: 12px; font-weight: 600; color: #475569; cursor: pointer;
+    }
+    .btn-quick-date.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .date-range-wrap { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #64748b; }
+    .date-range-wrap input { padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; }
+
+    .cards-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+    @media (max-width: 1100px) { .cards-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .cards-grid { grid-template-columns: 1fr; } }
+
+    .rep-card {
+      background: #fff; border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 16px;
+      cursor: pointer; transition: all 0.2s ease; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .rep-card:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.06); border-color: #94a3b8; }
+    .rep-card.active-card { border-color: #2563eb; background: #f0f7ff; }
+
+    .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 4px; display: flex; justify-content: space-between; }
+    .card-main-val { font-size: 21px; font-weight: 900; color: #0f172a; margin-bottom: 2px; }
+    .card-sub-info { font-size: 11px; color: #64748b; display: flex; flex-direction: column; gap: 2px; }
+
+    .audit-reports-bar {
+      background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 14px;
+      margin-bottom: 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    }
+    .audit-bar-title { font-size: 12px; font-weight: 800; color: #475569; text-transform: uppercase; margin-right: 6px; }
+    .btn-audit {
+      border: 1px solid #cbd5e1; background: #f8fafc; padding: 7px 14px; border-radius: 6px;
+      font-size: 12.5px; font-weight: 700; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-audit:hover { background: #e2e8f0; }
+    .btn-audit.active-audit { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+    .detail-panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+    .detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+    .detail-header h3 { font-size: 16px; color: #0f172a; font-weight: 700; }
+
+    .table-container { overflow-x: auto; max-height: 520px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left; }
+    th { background: #f8fafc; padding: 10px; border-bottom: 2px solid #e2e8f0; color: #475569; position: sticky; top: 0; font-weight: 700; z-index: 5; }
+    td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    tr:hover { background: #f8fafc; }
+    tfoot td { background: #f1f5f9; font-weight: 800; font-size: 13px; border-top: 2px solid #cbd5e1; }
+
+    .badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+    .badge-green { background: #dcfce7; color: #15803d; }
+    .badge-red { background: #fee2e2; color: #b91c1c; }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-yellow { background: #fef08a; color: #854d0e; }
+
+    .modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.65); z-index: 1000; justify-content: center; align-items: center;
+    }
+    .modal-box { background: #fff; padding: 22px; border-radius: 12px; width: 92%; max-width: 440px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px; }
+    .modal-header h3 { font-size: 16px; font-weight: 700; }
+    .btn-close { border: none; background: none; font-size: 22px; cursor: pointer; color: #64748b; }
+    .form-group { margin-bottom: 10px; }
+    .form-group label { display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 3px; }
+    .form-group input, .form-group select { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; }
+    .btn-submit { width: 100%; background: #2563eb; color: #fff; border: none; padding: 10px; border-radius: 6px; font-size: 13.5px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="store-brand-header">
+      <div class="brand-left">
+        <h1 id="brand_name_en">RETAIL SUPERMARKET</h1>
+        <h2 id="brand_name_ar">سوبرماركت التجزئة</h2>
+        <div class="brand-info">
+          <span>VAT No: <b id="brand_vat">300000000000003</b></span> | 
+          <span>CR No: <b id="brand_cr">—</b></span> | 
+          <span>Phone: <b id="brand_phone">—</b></span><br>
+          <span id="brand_address">Jeddah, Saudi Arabia</span>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <button class="btn-top" style="background:#fef08a; border-color:#eab308; color:#854d0e;" onclick="openTransferModal()">🔄 Fund Transfer</button>
+        <button class="btn-top" onclick="openOpeningBalModal()">⚙️ Balances</button>
+        <a href="index.html" class="btn-top">⬅ Dashboard</a>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <div class="date-quick-btns">
+        <button class="btn-quick-date active" id="btnDateAll" onclick="setDateFilter('all')">🌟 All Time (മുഴുവൻ)</button>
+        <button class="btn-quick-date" id="btnDateToday" onclick="setDateFilter('today')">📅 Today</button>
+        <button class="btn-quick-date" id="btnDateMonth" onclick="setDateFilter('this_month')">🗓️ This Month</button>
+        <button class="btn-quick-date" id="btnDateLastMonth" onclick="setDateFilter('last_month')">⏪ Last Month</button>
+      </div>
+
+      <div class="date-range-wrap">
+        <span>From:</span>
+        <input type="date" id="inputDateFrom">
+        <span>To:</span>
+        <input type="date" id="inputDateTo">
+        <button class="btn-top" style="background:#2563eb; color:#fff; border-color:#2563eb; padding:5px 12px;" onclick="loadAnalytics()">🔍 View</button>
+      </div>
+    </div>
+
+    <!-- 8 OVERVIEW CARDS WITH NET TOTALS & DETAILED SUB-BREAKDOWNS -->
+    <div class="cards-grid">
+      <!-- 1. Net Sales Card -->
+      <div class="rep-card active-card" id="card_sales" onclick="showDetailTab('sales')">
+        <div class="card-title"><span>🛒 Net Sales (صافي المبيعات)</span><span style="color:#2563eb;">1</span></div>
+        <div class="card-main-val" id="dispGrossSales" style="color:#2563eb;">0.00 SAR</div>
+        <div class="card-sub-info">
+          <span>Gross: <b id="dispSubGrossSales">0.00</b> | Returns: <b id="dispSubSalesRet" style="color:#dc2626;">-0.00</b></span>
+          <span>💵 Cash: <b id="dispSalesCash">0.00</b> | 💳 Bank: <b id="dispSalesBank">0.00</b></span>
+        </div>
+      </div>
+
+      <!-- 2. Net Purchases Card -->
+      <div class="rep-card" id="card_purchases" onclick="showDetailTab('purchases')">
+        <div class="card-title"><span>📦 Net Purchases (صافي المشتريات)</span><span style="color:#ea580c;">2</span></div>
+        <div class="card-main-val" id="dispGrossPurch" style="color:#ea580c;">0.00 SAR</div>
+        <div class="card-sub-info">
+          <span>Gross: <b id="dispSubGrossPurch">0.00</b> | Returns: <b id="dispSubPurchRet" style="color:#dc2626;">-0.00</b></span>
+          <span>💵 Cash: <b id="dispPurchCash">0.00</b> | 📑 Credit: <b id="dispPurchCredit">0.00</b></span>
+        </div>
+      </div>
+
+      <!-- 3. Total Expenses Card -->
+      <div class="rep-card" id="card_expenses" onclick="showDetailTab('expenses')">
+        <div class="card-title"><span>💸 Total Expenses (المصروفات)</span><span style="color:#dc2626;">3</span></div>
+        <div class="card-main-val" id="dispTotalExp" style="color:#dc2626;">0.00 SAR</div>
+        <div class="card-sub-info">
+          <span>☕ Petty Cash + 💡 Utilities</span>
+          <span>👥 Salaries Paid to Staff</span>
+        </div>
+      </div>
+
+      <!-- 4. Customer Debts Card -->
+      <div class="rep-card" id="card_customers" onclick="showDetailTab('customers')">
+        <div class="card-title"><span>👥 Customer Debts (لنا طرف العملاء)</span><span style="color:#d97706;">4</span></div>
+        <div class="card-main-val" id="dispCustDebt" style="color:#d97706;">0.00 SAR</div>
+        <div class="card-sub-info">
+          <span>Total Outstanding Receivables</span>
+          <span>Click to view debtors list</span>
+        </div>
+      </div>
+
+      <!-- 5. Vendor Payables Card -->
+      <div class="rep-card" id="card_vendors" onclick="showDetailTab('vendors')">
+        <div class="card-title"><span>🚚 Vendor Payables (علينا للموردين)</span><span style="color:#b91c1c;">5</span></div>
+        <div class="card-main-val" id="dispVendPayable" style="color:#b91c1c;">0.00 SAR</div>
+        <div class="card-sub-info">
+          <span>Total Outstanding Payables</span>
+          <span>Click to view suppliers list</span>
+        </div>
+      </div>
+
+      <!-- 6. Liabilities Card -->
+      <div class="rep-card" id="card_liabilities" onclick="showDetailTab('liabilities')">
+        <div class="card-title"><span>⚠️ Pending Bills & Salary</span><span style="color:#dc2626;">6</span></div>
+        <div class="card-main-val" id="dispTotalLiab" style="color:#dc2626;">0.00 SAR</div>
+        <div class="card-sub-info">
+          <span>👥 Salaries: <b id="dispSubLiabSal">0.00</b> | 💡 Bills: <b id="dispSubLiabUtil">0.00</b></span>
+        </div>
+      </div>
+
+      <!-- 7. Liquidity Card -->
+      <div class="rep-card" id="card_liquidity" onclick="showDetailTab('liquidity')">
+        <div class="card-title"><span>💰 Cash & Bank Funds (السيولة)</span><span style="color:#16a34a;">7</span></div>
+        <div class="card-main-val" id="dispTotalLiquid" style="color:#16a34a;">0.00 SAR</div>
+        <div class="card-sub-info">
+          <span>💵 Drawer: <b id="dispCashInHand">0.00</b> | 💳 Bank: <b id="dispBankBal">0.00</b></span>
+        </div>
+      </div>
+
+      <!-- 8. ZATCA Card -->
+      <div class="rep-card" id="card_zatca" onclick="showDetailTab('zatca')">
+        <div class="card-title"><span>🏛️ ZATCA 15% VAT Return</span><span style="color:#4f46e5;">8</span></div>
+        <div class="card-main-val" id="dispNetVatDue" style="color:#4f46e5;">0.00 SAR</div>
+        <div class="card-sub-info">
+          <span>Net VAT Due to Authority</span>
+          <span>Official Tax Return View</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 SPECIAL AUDIT REPORT BUTTONS -->
+    <div class="audit-reports-bar">
+      <span class="audit-bar-title">📋 Detailed Reports:</span>
+      <button class="btn-audit" id="audit_sales" onclick="showDetailTab('sales')">🛒 Sales Report (All + Returns)</button>
+      <button class="btn-audit" id="audit_sales_ret" onclick="showDetailTab('audit_sales_ret')">🔄 Sales Return (Credit Notes Only)</button>
+      <button class="btn-audit" id="audit_purch" onclick="showDetailTab('purchases')">📦 Purchase Report (All + Returns)</button>
+      <button class="btn-audit" id="audit_purch_ret" onclick="showDetailTab('audit_purch_ret')">↩️ Purchase Return (Debit Notes Only)</button>
+    </div>
+
+    <!-- DETAIL VIEW & EXCEL EXPORT PANEL -->
+    <div class="detail-panel">
+      <div class="detail-header">
+        <h3 id="detailViewTitle">Sales Breakdown</h3>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-top btn-excel" id="btnExportExcel" onclick="exportActiveTableToExcel()">📥 Download Excel (.xlsx/.csv)</button>
+          <button class="btn-top" style="background:#2563eb; color:#fff; border-color:#2563eb;" onclick="window.print()">🖨️ Print (A4)</button>
+        </div>
+      </div>
+
+      <div id="detailViewContent" class="table-container"></div>
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <div id="transferModal" class="modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>🔄 Cash ⇄ Bank Fund Transfer</h3>
+        <button class="btn-close" onclick="closeModal('transferModal')">&times;</button>
+      </div>
+      <form onsubmit="handleFundTransfer(event)">
+        <div class="form-group">
+          <label>Transfer Direction *</label>
+          <select id="tr_type" required>
+            <option value="DEPOSIT">💵 ➔ 💳 Deposit to Bank (Drawer to Bank)</option>
+            <option value="WITHDRAW">💳 ➔ 💵 Withdraw from Bank (Bank to Drawer)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Amount (SAR) *</label>
+          <input type="number" step="0.01" id="tr_amount" required placeholder="0.00" style="font-size:15px; font-weight:bold;">
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="tr_date">
+        </div>
+        <div class="form-group">
+          <label>Notes / Reference Slip</label>
+          <input type="text" id="tr_notes" placeholder="Slip # or reason">
+        </div>
+        <button type="submit" class="btn-submit">Confirm Transfer</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="openingBalModal" class="modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>⚙️ Store Opening Cash & Bank</h3>
+        <button class="btn-close" onclick="closeModal('openingBalModal')">&times;</button>
+      </div>
+      <form onsubmit="handleSaveOpeningBal(event)">
+        <div class="form-group">
+          <label>Opening Cash in Drawer (SAR)</label>
+          <input type="number" step="0.01" id="init_cash_input" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label>Opening Bank Account Balance (SAR)</label>
+          <input type="number" step="0.01" id="init_bank_input" placeholder="0.00">
+        </div>
+        <button type="submit" class="btn-submit">Save Opening Balances</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function getApiBase() {
+      var role = localStorage.getItem('pos_machine_role') || 'server';
+      var ip = localStorage.getItem('pos_server_ip') || '';
+      var port = window.location.port || '5050';
+      if (role === 'terminal' && ip) {
+        return 'http://' + ip + ':' + port;
+      }
+      return '';
+    }
+
+    var analyticsData = null;
+    var activeTab = 'sales';
+
+    function fNum(val) {
+      var n = parseFloat(val);
+      return (isNaN(n) ? 0 : n).toFixed(2);
+    }
+
+    window.onload = function() {
+      setDateFilter('all');
+    };
+
+    function setDateFilter(mode) {
+      var allBtns = document.querySelectorAll('.btn-quick-date');
+      for (var i = 0; i < allBtns.length; i++) {
+        allBtns[i].classList.remove('active');
+      }
+
+      var d = new Date();
+      var today = d.toISOString().slice(0, 10);
+
+      if (mode === 'all') {
+        var bAll = document.getElementById('btnDateAll');
+        if (bAll) bAll.classList.add('active');
+        document.getElementById('inputDateFrom').value = '2020-01-01';
+        document.getElementById('inputDateTo').value = '2099-12-31';
+      } else if (mode === 'today') {
+        var bToday = document.getElementById('btnDateToday');
+        if (bToday) bToday.classList.add('active');
+        document.getElementById('inputDateFrom').value = today;
+        document.getElementById('inputDateTo').value = today;
+      } else if (mode === 'this_month') {
+        var bMonth = document.getElementById('btnDateMonth');
+        if (bMonth) bMonth.classList.add('active');
+        var firstOfMonth = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
+        document.getElementById('inputDateFrom').value = firstOfMonth;
+        document.getElementById('inputDateTo').value = today;
+      } else if (mode === 'last_month') {
+        var bLast = document.getElementById('btnDateLastMonth');
+        if (bLast) bLast.classList.add('active');
+        var firstOfLastMonth = new Date(d.getFullYear(), d.getMonth() - 1, 1).toISOString().slice(0, 10);
+        var lastOfLastMonth = new Date(d.getFullYear(), d.getMonth(), 0).toISOString().slice(0, 10);
+        document.getElementById('inputDateFrom').value = firstOfLastMonth;
+        document.getElementById('inputDateTo').value = lastOfLastMonth;
+      }
+
+      loadAnalytics();
+    }
+
+    function loadAnalytics() {
+      var from = document.getElementById('inputDateFrom').value || '2020-01-01';
+      var to = document.getElementById('inputDateTo').value || '2099-12-31';
+
+      fetch(getApiBase() + '/api/reports/analytics?from=' + from + '&to=' + to)
+        .then(function(res) { return res.json(); })
+        .then(function(j) {
+          if (j.success && j.data) {
+            analyticsData = j.data;
+            renderStoreProfile();
+            renderCards();
+            renderActiveDetailView();
+          }
+        })
+        .catch(function(err) {
+          console.error('Analytics load error:', err);
+        });
+    }
+
+    function renderStoreProfile() {
+      if (!analyticsData || !analyticsData.store) return;
+      var s = analyticsData.store;
+      if (s.company_name_en) document.getElementById('brand_name_en').innerText = s.company_name_en;
+      if (s.company_name_ar) document.getElementById('brand_name_ar').innerText = s.company_name_ar;
+      if (s.vat_number) document.getElementById('brand_vat').innerText = s.vat_number;
+      if (s.cr_number) document.getElementById('brand_cr').innerText = s.cr_number;
+      if (s.phone) document.getElementById('brand_phone').innerText = s.phone;
+      if (s.address_en || s.address_ar) document.getElementById('brand_address').innerText = (s.address_en || '') + ' ' + (s.address_ar || '');
+    }
+
+    function renderCards() {
+      if (!analyticsData) return;
+      var d = analyticsData;
+
+      // 1. Sales (Net Sales as Main Value!)
+      var netS = (d.sales.summary.net_sales !== undefined) ? d.sales.summary.net_sales : (d.sales.summary.gross_sales - d.sales.summary.return_sales);
+      document.getElementById('dispGrossSales').innerText = fNum(netS) + ' SAR';
+      document.getElementById('dispSubGrossSales').innerText = fNum(d.sales.summary.gross_sales);
+      document.getElementById('dispSubSalesRet').innerText = '-' + fNum(d.sales.summary.return_sales);
+      document.getElementById('dispSalesCash').innerText = fNum(d.sales.summary.cash_sales);
+      document.getElementById('dispSalesBank').innerText = fNum(d.sales.summary.bank_sales);
+
+      // 2. Purchases (Net Purchases as Main Value!)
+      var netP = (d.purchases.summary.net_purch !== undefined) ? d.purchases.summary.net_purch : (d.purchases.summary.gross_purch - d.purchases.summary.return_purch);
+      document.getElementById('dispGrossPurch').innerText = fNum(netP) + ' SAR';
+      document.getElementById('dispSubGrossPurch').innerText = fNum(d.purchases.summary.gross_purch);
+      document.getElementById('dispSubPurchRet').innerText = '-' + fNum(d.purchases.summary.return_purch);
+      document.getElementById('dispPurchCash').innerText = fNum(d.purchases.summary.cash_purch);
+      document.getElementById('dispPurchCredit').innerText = fNum(d.purchases.summary.credit_purch);
+
+      // 3. Expenses
+      document.getElementById('dispTotalExp').innerText = fNum(d.expenses.total) + ' SAR';
+
+      // 4. Customers Debt
+      document.getElementById('dispCustDebt').innerText = fNum(d.customers.totalDebt) + ' SAR';
+
+      // 5. Vendor Payables
+      document.getElementById('dispVendPayable').innerText = fNum(d.vendors.totalPayable) + ' SAR';
+
+      // 6. Liabilities
+      document.getElementById('dispTotalLiab').innerText = fNum(d.liabilities.total) + ' SAR';
+      document.getElementById('dispSubLiabSal').innerText = fNum(d.liabilities.salariesTotal);
+      document.getElementById('dispSubLiabUtil').innerText = fNum(d.liabilities.utilitiesTotal);
+
+      // 7. Reconciled Liquidity
+      var totLiq = (parseFloat(d.liquidity.cashInHand) || 0) + (parseFloat(d.liquidity.bankBalance) || 0);
+      document.getElementById('dispTotalLiquid').innerText = fNum(totLiq) + ' SAR';
+      document.getElementById('dispCashInHand').innerText = fNum(d.liquidity.cashInHand);
+      document.getElementById('dispBankBal').innerText = fNum(d.liquidity.bankBalance);
+
+      // 8. ZATCA VAT Return
+      document.getElementById('dispNetVatDue').innerText = fNum(d.zatca.netVatPayable) + ' SAR';
+    }
+
+    function showDetailTab(tab) {
+      activeTab = tab;
+      
+      document.querySelectorAll('.rep-card').forEach(function(c) { c.classList.remove('active-card'); });
+      var activeCard = document.getElementById('card_' + tab);
+      if (activeCard) activeCard.classList.add('active-card');
+
+      document.querySelectorAll('.btn-audit').forEach(function(b) { b.classList.remove('active-audit'); });
+      var activeAuditBtn = document.getElementById(tab);
+      if (activeAuditBtn) activeAuditBtn.classList.add('active-audit');
+
+      renderActiveDetailView();
+    }
+
+    function renderActiveDetailView() {
+      if (!analyticsData) return;
+      var d = analyticsData;
+      var container = document.getElementById('detailViewContent');
+      var titleEl = document.getElementById('detailViewTitle');
+
+      if (activeTab === 'sales' || activeTab === 'audit_sales') {
+        titleEl.innerText = '🛒 Detailed Sales & Returns Audit Log (' + (d.sales.list ? d.sales.list.length : 0) + ' Invoices)';
+        var rows = '';
+        var totBase = 0, totVat = 0, totGrand = 0;
+
+        if (d.sales.list && d.sales.list.length > 0) {
+          d.sales.list.forEach(function(b) {
+            var isRet = (b.is_return === 1);
+            var mult = isRet ? -1 : 1;
+            var grand = (parseFloat(b.total_amount) || 0) * mult;
+            var base = (parseFloat(b.base_amount) || 0) * mult;
+            var vat = (parseFloat(b.vat_amount) || 0) * mult;
+
+            totBase += base;
+            totVat += vat;
+            totGrand += grand;
+
+            rows += '<tr style="' + (isRet ? 'background:#fff1f2;' : '') + '">' +
+              '<td>' + b.invoice_date + ' <small style="color:#64748b;">' + (b.invoice_time || '') + '</small></td>' +
+              '<td><b>' + b.invoice_no + '</b>' + (isRet ? ' <span class="badge badge-red">RETURN</span>' : '') + '</td>' +
+              '<td>' + b.party_name + '</td>' +
+              '<td>' + (b.vat_number || '—') + '</td>' +
+              '<td><span class="badge ' + (isRet ? 'badge-red' : 'badge-blue') + '">' + (b.payment_type || 'CASH') + '</span></td>' +
+              '<td>' + fNum(base) + '</td>' +
+              '<td style="color:' + (isRet ? '#dc2626' : '#16a34a') + '; font-weight:bold;">' + (isRet ? '-' : '+') + fNum(Math.abs(vat)) + '</td>' +
+              '<td style="color:' + (isRet ? '#dc2626' : '#0f172a') + '; font-weight:bold;">' + fNum(grand) + '</td>' +
+            '</tr>';
+          });
+        }
+
+        container.innerHTML = '<table id="activeExportTable">' +
+          '<thead><tr><th>Date & Time</th><th>Invoice No</th><th>Customer Name</th><th>Tax / VAT No</th><th>Payment Type</th><th>Taxable Base (SAR)</th><th>VAT 15%</th><th>Net Total (SAR)</th></tr></thead>' +
+          '<tbody>' + (rows || '<tr><td colspan="8" style="text-align:center; padding:15px;">No sales found in this period</td></tr>') + '</tbody>' +
+          '<tfoot><tr><td colspan="5" style="text-align:right;">NET SALES TOTAL / صافي المبيعات:</td><td>' + fNum(totBase) + ' SAR</td><td style="color:#16a34a;">' + fNum(totVat) + ' SAR</td><td style="color:#2563eb; font-size:14px;">' + fNum(totGrand) + ' SAR</td></tr></tfoot>' +
+        '</table>';
+
+      } else if (activeTab === 'audit_sales_ret') {
+        titleEl.innerText = '🔄 Sales Return Report (Credit Notes Only)';
+        var rows = '';
+        var totBase = 0, totVat = 0, totGrand = 0;
+
+        if (d.salesReturn.list && d.salesReturn.list.length > 0) {
+          d.salesReturn.list.forEach(function(b) {
+            totBase += (parseFloat(b.base_amount) || 0);
+            totVat += (parseFloat(b.vat_amount) || 0);
+            totGrand += (parseFloat(b.total_amount) || 0);
+
+            rows += '<tr>' +
+              '<td>' + b.invoice_date + ' <small style="color:#64748b;">' + (b.invoice_time || '') + '</small></td>' +
+              '<td><b>' + b.invoice_no + '</b></td>' +
+              '<td>' + (b.return_ref_no || '—') + '</td>' +
+              '<td>' + b.party_name + '</td>' +
+              '<td>' + (b.vat_number || '—') + '</td>' +
+              '<td><span class="badge badge-red">' + (b.payment_type || 'CASH') + '</span></td>' +
+              '<td>-' + fNum(b.base_amount) + '</td>' +
+              '<td style="color:#dc2626; font-weight:bold;">-' + fNum(b.vat_amount) + '</td>' +
+              '<td style="color:#dc2626; font-weight:bold;">-' + fNum(b.total_amount) + '</td>' +
+            '</tr>';
+          });
+        }
+
+        container.innerHTML = '<table id="activeExportTable">' +
+          '<thead><tr><th>Date & Time</th><th>Credit Note #</th><th>Ref Invoice #</th><th>Customer Name</th><th>Tax / VAT No</th><th>Payment Type</th><th>Base Amount</th><th>VAT 15%</th><th>Return Total (SAR)</th></tr></thead>' +
+          '<tbody>' + (rows || '<tr><td colspan="9" style="text-align:center; padding:15px;">No sales returns in this period</td></tr>') + '</tbody>' +
+          '<tfoot><tr><td colspan="6" style="text-align:right;">TOTAL RETURNS / مجموع المردودات:</td><td>-' + fNum(totBase) + ' SAR</td><td style="color:#dc2626;">-' + fNum(totVat) + ' SAR</td><td style="color:#dc2626;">-' + fNum(totGrand) + ' SAR</td></tr></tfoot>' +
+        '</table>';
+
+      } else if (activeTab === 'purchases' || activeTab === 'audit_purch') {
+        titleEl.innerText = '📦 Detailed Purchases & Debit Notes Audit Log (' + (d.purchases.list ? d.purchases.list.length : 0) + ' Bills)';
+        var rows = '';
+        var totBase = 0, totVat = 0, totGrand = 0;
+
+        if (d.purchases.list && d.purchases.list.length > 0) {
+          d.purchases.list.forEach(function(b) {
+            var isRet = (b.is_return === 1);
+            var mult = isRet ? -1 : 1;
+            var grand = (parseFloat(b.total_amount) || 0) * mult;
+            var base = (parseFloat(b.base_amount) || 0) * mult;
+            var vat = (parseFloat(b.vat_amount) || 0) * mult;
+
+            totBase += base;
+            totVat += vat;
+            totGrand += grand;
+
+            rows += '<tr style="' + (isRet ? 'background:#fff1f2;' : '') + '">' +
+              '<td>' + b.purchase_date + '</td>' +
+              '<td><b>' + b.invoice_no + '</b>' + (isRet ? ' <span class="badge badge-red">DEBIT NOTE</span>' : '') + '</td>' +
+              '<td>' + b.party_name + '</td>' +
+              '<td>' + (b.vat_number || '—') + '</td>' +
+              '<td><span class="badge ' + (isRet ? 'badge-red' : 'badge-blue') + '">' + (b.payment_type || 'CASH') + '</span></td>' +
+              '<td>' + fNum(base) + '</td>' +
+              '<td style="color:' + (isRet ? '#dc2626' : '#16a34a') + '; font-weight:bold;">' + (isRet ? '-' : '+') + fNum(Math.abs(vat)) + '</td>' +
+              '<td style="color:' + (isRet ? '#dc2626' : '#0f172a') + '; font-weight:bold;">' + fNum(grand) + '</td>' +
+            '</tr>';
+          });
+        }
+
+        container.innerHTML = '<table id="activeExportTable">' +
+          '<thead><tr><th>Date</th><th>Bill / Ref #</th><th>Supplier / Vendor</th><th>Tax / VAT No</th><th>Payment Type</th><th>Base Amount</th><th>VAT 15%</th><th>Net Total (SAR)</th></tr></thead>' +
+          '<tbody>' + (rows || '<tr><td colspan="8" style="text-align:center; padding:15px;">No purchases found in this period</td></tr>') + '</tbody>' +
+          '<tfoot><tr><td colspan="5" style="text-align:right;">NET PURCHASES TOTAL / صافي المشتريات:</td><td>' + fNum(totBase) + ' SAR</td><td style="color:#16a34a;">' + fNum(totVat) + ' SAR</td><td style="color:#ea580c; font-size:14px;">' + fNum(totGrand) + ' SAR</td></tr></tfoot>' +
+        '</table>';
+
+      } else if (activeTab === 'audit_purch_ret') {
+        titleEl.innerText = '↩️ Purchase Return Report (Debit Notes Only)';
+        var rows = '';
+        var totBase = 0, totVat = 0, totGrand = 0;
+
+        if (d.purchasesReturn.list && d.purchasesReturn.list.length > 0) {
+          d.purchasesReturn.list.forEach(function(b) {
+            totBase += (parseFloat(b.base_amount) || 0);
+            totVat += (parseFloat(b.vat_amount) || 0);
+            totGrand += (parseFloat(b.total_amount) || 0);
+
+            rows += '<tr>' +
+              '<td>' + b.purchase_date + '</td>' +
+              '<td><b>' + b.invoice_no + '</b></td>' +
+              '<td>' + (b.return_ref_no || '—') + '</td>' +
+              '<td>' + b.party_name + '</td>' +
+              '<td>' + (b.vat_number || '—') + '</td>' +
+              '<td><span class="badge badge-red">' + (b.payment_type || 'CASH') + '</span></td>' +
+              '<td>-' + fNum(b.base_amount) + '</td>' +
+              '<td style="color:#dc2626; font-weight:bold;">-' + fNum(b.vat_amount) + '</td>' +
+              '<td style="color:#dc2626; font-weight:bold;">-' + fNum(b.total_amount) + '</td>' +
+            '</tr>';
+          });
+        }
+
+        container.innerHTML = '<table id="activeExportTable">' +
+          '<thead><tr><th>Date</th><th>Debit Note #</th><th>Ref Bill #</th><th>Supplier / Vendor</th><th>Tax / VAT No</th><th>Payment Type</th><th>Base Amount</th><th>VAT 15%</th><th>Return Total (SAR)</th></tr></thead>' +
+          '<tbody>' + (rows || '<tr><td colspan="9" style="text-align:center; padding:15px;">No purchase returns in this period</td></tr>') + '</tbody>' +
+          '<tfoot><tr><td colspan="6" style="text-align:right;">TOTAL DEBIT NOTES / مجموع المردودات:</td><td>-' + fNum(totBase) + ' SAR</td><td style="color:#dc2626;">-' + fNum(totVat) + ' SAR</td><td style="color:#dc2626;">-' + fNum(totGrand) + ' SAR</td></tr></tfoot>' +
+        '</table>';
+
+      } else if (activeTab === 'expenses') {
+        titleEl.innerText = '💸 Expenses Summary & Audit Log';
+        var catRows = '';
+        if (d.expenses.list && d.expenses.list.length > 0) {
+          d.expenses.list.forEach(function(e) {
+            catRows += '<tr><td><b>' + e.category + '</b></td><td><span class="badge badge-yellow">' + e.type + '</span></td><td>' + e.count + ' entries</td><td><b>' + fNum(e.amount) + ' SAR</b></td></tr>';
+          });
+        }
+        var logRows = '';
+        if (d.expenses.log && d.expenses.log.length > 0) {
+          d.expenses.log.forEach(function(l) {
+            logRows += '<tr><td>' + (l.date || '—') + '</td><td><b>' + l.category + '</b></td><td>' + (l.description || '—') + '</td><td><span class="badge badge-blue">' + (l.payment_mode || 'CASH') + '</span></td><td><b>' + fNum(l.amount) + ' SAR</b></td></tr>';
+          });
+        }
+        container.innerHTML = '<table id="activeExportTable"><thead><tr><th>Category</th><th>Type</th><th>Count</th><th>Total Amount</th></tr></thead><tbody>' +
+          (catRows || '<tr><td colspan="4" style="text-align:center; padding:12px;">No expenses</td></tr>') + '</tbody></table>' +
+          '<h4 style="margin:20px 0 8px 0; color:#475569;">Detailed Log:</h4>' +
+          '<table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Payment Mode</th><th>Amount</th></tr></thead><tbody>' +
+          (logRows || '<tr><td colspan="5" style="text-align:center; padding:12px;">No transactions</td></tr>') + '</tbody></table>';
+
+      } else if (activeTab === 'customers') {
+        titleEl.innerText = '👥 Customers Outstanding Debt List';
+        var rows = '';
+        if (d.customers.list && d.customers.list.length > 0) {
+          d.customers.list.forEach(function(c) {
+            rows += '<tr><td><b>' + c.name_en + '</b><br><small style="color:#2563eb;">' + (c.name_ar||'') + '</small></td><td>' + (c.phone || '—') + '</td><td>' + (c.credit_limit > 0 ? fNum(c.credit_limit) : 'No Limit') + '</td><td style="color:#d97706; font-size:14px; font-weight:bold;">' + fNum(c.current_balance) + ' SAR</td><td><a href="parties.html" class="btn-top" style="padding:3px 8px; font-size:11px;">View Statement</a></td></tr>';
+          });
+        }
+        container.innerHTML = '<table id="activeExportTable"><thead><tr><th>Customer Name</th><th>Phone</th><th>Credit Limit</th><th>Due Debt (SAR)</th><th>Action</th></tr></thead><tbody>' +
+          (rows || '<tr><td colspan="5" style="text-align:center; padding:15px;">No debtors</td></tr>') + '</tbody></table>';
+
+      } else if (activeTab === 'vendors') {
+        titleEl.innerText = '🚚 Vendors Outstanding Payable List';
+        var rows = '';
+        if (d.vendors.list && d.vendors.list.length > 0) {
+          d.vendors.list.forEach(function(v) {
+            rows += '<tr><td><b>' + v.name_en + '</b><br><small style="color:#2563eb;">' + (v.name_ar||'') + '</small></td><td>' + (v.phone || '—') + '</td><td style="color:#b91c1c; font-size:14px; font-weight:bold;">' + fNum(v.current_balance) + ' SAR</td><td><a href="parties.html" class="btn-top" style="padding:3px 8px; font-size:11px;">View Ledger</a></td></tr>';
+          });
+        }
+        container.innerHTML = '<table id="activeExportTable"><thead><tr><th>Supplier Name</th><th>Phone</th><th>Total Payable (SAR)</th><th>Action</th></tr></thead><tbody>' +
+          (rows || '<tr><td colspan="4" style="text-align:center; padding:15px;">No payables</td></tr>') + '</tbody></table>';
+
+      } else if (activeTab === 'liabilities') {
+        titleEl.innerText = '⚠️ Pending Liabilities (Salaries + Unpaid Bills)';
+        var salRows = '';
+        if (d.liabilities.salariesList) {
+          d.liabilities.salariesList.forEach(function(s) {
+            salRows += '<tr><td><b>' + s.name_en + '</b></td><td>Salary</td><td>' + fNum(s.monthly_salary) + '</td><td style="color:#dc2626; font-weight:bold;">' + fNum(s.current_balance) + ' SAR</td></tr>';
+          });
+        }
+        var utilRows = '';
+        if (d.liabilities.utilitiesList) {
+          d.liabilities.utilitiesList.forEach(function(u) {
+            utilRows += '<tr><td><b>' + u.name_en + '</b></td><td>' + u.category + ' (' + (u.account_no||'') + ')</td><td>—</td><td style="color:#dc2626; font-weight:bold;">' + fNum(u.current_due) + ' SAR</td></tr>';
+          });
+        }
+        container.innerHTML = '<table id="activeExportTable"><thead><tr><th>Party / Service</th><th>Type</th><th>Rate</th><th>Pending Amount</th></tr></thead><tbody>' +
+          (salRows + utilRows || '<tr><td colspan="4" style="text-align:center; padding:15px;">No pending liabilities</td></tr>') + '</tbody></table>';
+
+      } else if (activeTab === 'liquidity') {
+        titleEl.innerText = '💰 Cash & Bank Movement Statement / حركة السيولة النقدية والبنكية';
+        
+        var log = (d.liquidity && d.liquidity.log) ? d.liquidity.log : [];
+        var rows = '';
+        var totInCash = 0, totOutCash = 0, totInBank = 0, totOutBank = 0;
+
+        log.forEach(function(item) {
+          var isIn = (item.flow === 'IN');
+          var isCash = (item.account === 'CASH');
+
+          if (isCash) {
+            if (isIn) totInCash += item.amount;
+            else totOutCash += item.amount;
+          } else {
+            if (isIn) totInBank += item.amount;
+            else totOutBank += item.amount;
+          }
+
+          rows += '<tr>' +
+            '<td>' + item.date + (item.time ? ' <small style="color:#64748b;">' + item.time + '</small>' : '') + '</td>' +
+            '<td><b>' + (item.ref_no || '—') + '</b></td>' +
+            '<td><span class="badge ' + (isCash ? 'badge-green' : 'badge-blue') + '">' + item.account + '</span></td>' +
+            '<td><b>' + item.category + '</b></td>' +
+            '<td>' + (item.party_name || item.description || '—') + '</td>' +
+            '<td>' + (isIn ? '<span class="badge badge-green">📥 IN</span>' : '<span class="badge badge-red">📤 OUT</span>') + '</td>' +
+            '<td style="font-weight:bold; color:' + (isIn ? '#15803d' : '#dc2626') + '; text-align:right;">' + (isIn ? '+' : '-') + fNum(item.amount) + ' SAR</td>' +
+          '</tr>';
+        });
+
+        var opCash = fNum(d.liquidity.openingCash !== undefined ? d.liquidity.openingCash : d.liquidity.initialCash);
+        var opBank = fNum(d.liquidity.openingBank !== undefined ? d.liquidity.openingBank : d.liquidity.initialBank);
+        var curCash = fNum(d.liquidity.cashInHand);
+        var curBank = fNum(d.liquidity.bankBalance);
+
+        container.innerHTML = 
+          '<div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:12px; margin-bottom:15px; font-size:12.5px;">' +
+            '<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px;">' +
+              '<h4 style="color:#15803d; margin-bottom:8px; display:flex; justify-content:space-between;"><span>💵 Cash in Hand (Drawer)</span><span style="font-size:11px; color:#64748b;">Opening: ' + opCash + ' SAR</span></h4>' +
+              '<div style="display:flex; justify-content:space-between; color:#15803d; margin-bottom:3px;"><span>+ Total Cash Received (IN):</span><b>+' + fNum(totInCash) + ' SAR</b></div>' +
+              '<div style="display:flex; justify-content:space-between; color:#dc2626; margin-bottom:6px;"><span>- Total Cash Spent (OUT):</span><b>-' + fNum(totOutCash) + ' SAR</b></div>' +
+              '<hr style="margin:6px 0; border:0; border-top:1px dashed #cbd5e1;">' +
+              '<div style="display:flex; justify-content:space-between; font-weight:bold; font-size:14px; color:#15803d;"><span>Closing Cash in Drawer:</span><span>' + curCash + ' SAR</span></div>' +
+            '</div>' +
+            '<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px;">' +
+              '<h4 style="color:#2563eb; margin-bottom:8px; display:flex; justify-content:space-between;"><span>💳 Bank Account (Mada / Bank)</span><span style="font-size:11px; color:#64748b;">Opening: ' + opBank + ' SAR</span></h4>' +
+              '<div style="display:flex; justify-content:space-between; color:#15803d; margin-bottom:3px;"><span>+ Total Bank Received (IN):</span><b>+' + fNum(totInBank) + ' SAR</b></div>' +
+              '<div style="display:flex; justify-content:space-between; color:#dc2626; margin-bottom:6px;"><span>- Total Bank Spent (OUT):</span><b>-' + fNum(totOutBank) + ' SAR</b></div>' +
+              '<hr style="margin:6px 0; border:0; border-top:1px dashed #cbd5e1;">' +
+              '<div style="display:flex; justify-content:space-between; font-weight:bold; font-size:14px; color:#2563eb;"><span>Closing Bank Balance:</span><span>' + curBank + ' SAR</span></div>' +
+            '</div>' +
+          '</div>' +
+          '<table id="activeExportTable">' +
+            '<thead>' +
+              '<tr>' +
+                '<th>Date & Time</th><th>Voucher / Ref #</th><th>Account</th><th>Category</th><th>Description / Party</th><th>Flow</th><th style="text-align:right;">Amount</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody>' + (rows || '<tr><td colspan="7" style="text-align:center; padding:16px;">No cash or bank movements found for this period</td></tr>') + '</tbody>' +
+            '<tfoot>' +
+              '<tr><td colspan="5" style="text-align:right;">PERIOD NET CASH MOVEMENT:</td><td><b>' + (totInCash >= totOutCash ? 'NET IN' : 'NET OUT') + '</b></td><td style="text-align:right; font-weight:bold; color:' + (totInCash >= totOutCash ? '#15803d' : '#dc2626') + ';">' + (totInCash >= totOutCash ? '+' : '') + fNum(totInCash - totOutCash) + ' SAR</td></tr>' +
+              '<tr><td colspan="5" style="text-align:right;">PERIOD NET BANK MOVEMENT:</td><td><b>' + (totInBank >= totOutBank ? 'NET IN' : 'NET OUT') + '</b></td><td style="text-align:right; font-weight:bold; color:' + (totInBank >= totOutBank ? '#15803d' : '#dc2626') + ';">' + (totInBank >= totOutBank ? '+' : '') + fNum(totInBank - totOutBank) + ' SAR</td></tr>' +
+            '</tfoot>' +
+          '</table>';
+      } else if (activeTab === 'zatca') {
+        titleEl.innerText = '🏛️ ZATCA 15% VAT Return / الإقرار الضريبي';
+        var z = d.zatca;
+        container.innerHTML = '<table id="activeExportTable" style="border:1px solid #cbd5e1;">' +
+          '<thead><tr style="background:#f1f5f9; border-bottom:2px solid #94a3b8;"><th>ZATCA Tax Category / بند الإقرار الضريبي</th><th>Base Amount (Excl. VAT)</th><th>15% VAT Amount</th></tr></thead>' +
+          '<tbody>' +
+            '<tr><td><b>1. Standard Rated Sales (المبيعات الخاضعة للنسبة الأساسية)</b></td><td>' + fNum(z.salesBase) + ' SAR</td><td style="color:#15803d; font-weight:bold;">+' + fNum(z.salesVat) + ' SAR</td></tr>' +
+            '<tr><td><b>2. Sales Returns / Credit Notes (مردودات المبيعات)</b></td><td>' + fNum(z.salesRetBase) + ' SAR</td><td style="color:#b91c1c; font-weight:bold;">-' + fNum(z.salesRetVat) + ' SAR</td></tr>' +
+            '<tr style="background:#f8fafc; font-weight:bold;"><td>Total Net Output VAT / إجمالي ضريبة المخرجات (A)</td><td>—</td><td style="color:#2563eb; font-size:14px;">' + fNum(z.netOutputVat) + ' SAR</td></tr>' +
+            '<tr><td colspan="3" style="background:#e2e8f0; height:2px; padding:0;"></td></tr>' +
+            '<tr><td><b>3. Standard Rated Purchases (المشتريات الخاضعة للنسبة الأساسية)</b></td><td>' + fNum(z.purchBase) + ' SAR</td><td style="color:#15803d; font-weight:bold;">+' + fNum(z.purchVat) + ' SAR</td></tr>' +
+            '<tr><td><b>4. Purchase Returns / Debit Notes (مردودات المشتريات)</b></td><td>' + fNum(z.purchRetBase) + ' SAR</td><td style="color:#b91c1c; font-weight:bold;">-' + fNum(z.purchRetVat) + ' SAR</td></tr>' +
+            '<tr style="background:#f8fafc; font-weight:bold;"><td>Total Net Input VAT / إجمالي ضريبة المدخلات (B)</td><td>—</td><td style="color:#2563eb; font-size:14px;">' + fNum(z.netInputVat) + ' SAR</td></tr>' +
+            '<tr style="background:#e0e7ff; font-size:15px; font-weight:900;"><td style="color:#3730a3;">صافي الضريبة المستحقة / Net VAT Due to Authority (A - B)</td><td>—</td><td style="color:#4338ca;">' + fNum(z.netVatPayable) + ' SAR</td></tr>' +
+          '</tbody>' +
+        '</table>';
+      }
+    }
+
+    function exportActiveTableToExcel() {
+      var table = document.getElementById('activeExportTable');
+      if (!table) { alert('No report data table to export!'); return; }
+
+      var store = (analyticsData && analyticsData.store) ? analyticsData.store : {};
+      var storeName = store.company_name_en || 'RETAIL STORE';
+      var storeVat = store.vat_number ? ('VAT: ' + store.vat_number) : '';
+      var dateRange = 'Period: ' + (analyticsData.filter.from || '') + ' to ' + (analyticsData.filter.to || '');
+
+      var csv = [];
+      csv.push('"' + storeName.replace(/"/g, '""') + '"');
+      if (storeVat) csv.push('"' + storeVat.replace(/"/g, '""') + '"');
+      csv.push('"' + document.getElementById('detailViewTitle').innerText.replace(/"/g, '""') + '"');
+      csv.push('"' + dateRange + '"');
+      csv.push('');
+
+      var rows = table.querySelectorAll('tr');
+      for (var i = 0; i < rows.length; i++) {
+        var row = [];
+        var cols = rows[i].querySelectorAll('th, td');
+        for (var j = 0; j < cols.length; j++) {
+          var data = cols[j].innerText.replace(/[\r\n]+/g, ' ').replace(/"/g, '""').trim();
+          row.push('"' + data + '"');
+        }
+        csv.push(row.join(','));
+      }
+
+      var csvContent = '\uFEFF' + csv.join('\r\n');
+      var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      var link = document.createElement('a');
+      var fileName = activeTab + '_report_' + (new Date().toISOString().slice(0, 10)) + '.csv';
+
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function openTransferModal() {
+      document.getElementById('tr_date').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('tr_amount').value = '';
+      document.getElementById('tr_notes').value = '';
+      document.getElementById('transferModal').style.display = 'flex';
+    }
+
+    function handleFundTransfer(e) {
+      e.preventDefault();
+      var payload = {
+        type: document.getElementById('tr_type').value,
+        amount: parseFloat(document.getElementById('tr_amount').value),
+        entry_date: document.getElementById('tr_date').value,
+        description: document.getElementById('tr_notes').value
+      };
+
+      fetch(getApiBase() + '/api/reports/transfer-fund', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(j) {
+        if (j.success) {
+          alert('Transfer completed successfully!');
+          closeModal('transferModal');
+          loadAnalytics();
+        } else {
+          alert('Transfer error: ' + j.error);
+        }
+      });
+    }
+
+    function openOpeningBalModal() {
+      if (analyticsData) {
+        document.getElementById('init_cash_input').value = analyticsData.liquidity.initialCash || '0.00';
+        document.getElementById('init_bank_input').value = analyticsData.liquidity.initialBank || '0.00';
+      }
+      document.getElementById('openingBalModal').style.display = 'flex';
+    }
+
+    function handleSaveOpeningBal(e) {
+      e.preventDefault();
+      var payload = {
+        initial_cash: parseFloat(document.getElementById('init_cash_input').value) || 0,
+        initial_bank: parseFloat(document.getElementById('init_bank_input').value) || 0
+      };
+
+      fetch(getApiBase() + '/api/reports/opening-balance', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(j) {
+        if (j.success) {
+          alert('Opening balances saved successfully!');
+          closeModal('openingBalModal');
+          loadAnalytics();
+        } else {
+          alert('Error: ' + j.error);
+        }
+      });
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>A4 Purchase Voucher / سند استلام مشتريات</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #525659; padding: 20px; display: flex; justify-content: center; }
+    .page-a4 {
+      width: 210mm; min-height: 297mm; padding: 18mm 15mm;
+      background: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #4f46e5; padding-bottom: 12px; }
+    .store-title h1 { font-size: 22px; color: #1e1b4b; }
+    .store-title h2 { font-size: 16px; color: #475569; direction: rtl; }
+    .voucher-title-block { text-align: right; }
+    .voucher-title-block h2 { font-size: 20px; color: #0f172a; }
+    .voucher-title-block h3 { font-size: 14px; color: #64748b; direction: rtl; }
+
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 15px 0; }
+    .meta-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; font-size: 12px; line-height: 1.5; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11.5px; }
+    th { background: #f1f5f9; border-bottom: 2px solid #cbd5e1; padding: 8px; text-align: left; color: #334155; }
+    td { padding: 7px 8px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+
+    .summary-grid { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 15px; }
+    .totals-table { width: 340px; font-size: 12px; }
+    .totals-table td { padding: 4px 8px; }
+    .totals-table tr.grand-row td { background: #e0e7ff; font-weight: bold; font-size: 14px; color: #3730a3; }
+    .totals-table tr.due-row td { background: #fef2f2; font-weight: bold; font-size: 13.5px; color: #dc2626; border-top: 2px solid #ef4444; }
+
+    .footer { border-top: 1px solid #cbd5e1; padding-top: 15px; margin-top: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
+    .stamp-box { text-align: center; }
+    .stamp-box p { font-size: 11px; margin-bottom: 4px; font-weight: 600; color: #475569; }
+    .stamp-img { max-height: 65px; max-width: 130px; }
+
+    .btn-print-floating {
+      position: fixed; bottom: 25px; right: 25px; background: #4f46e5; color: #fff;
+      border: none; padding: 12px 24px; border-radius: 8px; font-size: 15px;
+      font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .page-a4 { box-shadow: none; padding: 8mm; width: 100%; min-height: auto; }
+      .btn-print-floating { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="btn-print-floating" onclick="window.print()">🖨️ Print Purchase Voucher</button>
+
+  <div class="page-a4">
+    <div>
+      <div class="header">
+        <div class="store-title">
+          <h1 id="storeNameEn">STORE NAME</h1>
+          <h2 id="storeNameAr">اسم المتجر</h2>
+          <div style="font-size: 11px; color: #475569; margin-top: 3px;">
+            VAT: <b id="storeVat">--</b> | CR: <b id="storeCr">--</b><br>
+            <span id="storeAddress">Saudi Arabia</span>
+          </div>
+        </div>
+        <div class="voucher-title-block">
+          <h2 id="voucherTitle">GOODS PURCHASE VOUCHER</h2>
+          <h3 id="voucherTitleAr">سند استلام مشتريات</h3>
+          <div style="font-size: 12px; color: #475569; margin-top: 4px;">
+            Voucher No: <b id="purNo">--</b><br>
+            Date: <span id="purDate">--</span> | Time: <span id="purTime">--</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="meta-grid">
+        <div class="meta-box">
+          <b>Supplier / Vendor / المورد:</b><br>
+          <span id="vendorName" style="font-size: 13px; font-weight: bold; color: #4338ca;">--</span><br>
+          Phone: <span id="vendorPhone">N/A</span><br>
+          Supplier VAT: <span id="vendorVat">N/A</span> | CR: <span id="vendorCr">N/A</span><br>
+          <b>Supplier Bill No / رقم فاتورة المورد: <span id="suppInvNo" style="color:#dc2626;">N/A</span></b>
+        </div>
+        <div class="meta-box">
+          <b>Payment Details / طريقة الدفع:</b><br>
+          Payment Mode: <b id="payMode">CASH</b><br>
+          Paid at Inward: <span id="paidCounter">0.00 SAR</span><br>
+          Credited to Account: <b id="paidCredit" style="color: #dc2626;">0.00 SAR</b>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th width="30">#</th>
+            <th>Item / Description</th>
+            <th width="45">Unit</th>
+            <th width="45" style="text-align: center;">Qty</th>
+            <th width="80" style="text-align: right;">Cost Rate</th>
+            <th width="80" style="text-align: right;">Taxable (SAR)</th>
+            <th width="65" style="text-align: right;">VAT (15%)</th>
+            <th width="85" style="text-align: right;">Total (SAR)</th>
+          </tr>
+        </thead>
+        <tbody id="itemsBody"></tbody>
+      </table>
+    </div>
+
+    <div>
+      <div class="summary-grid">
+        <div style="font-size:11px; color:#64748b; line-height:1.5;">
+          <b>Verification Note / ملاحظة الاستلام:</b><br>
+          Goods received in good condition and stock updated automatically.<br>
+          تم استلام البضاعة بحالة جيدة وتحديث المخزون بنجاح.
+        </div>
+
+        <table class="totals-table">
+          <tr>
+            <td>Total Taxable (المجموع قبل الضريبة):</td>
+            <td style="text-align: right;" id="subTotal">0.00 SAR</td>
+          </tr>
+          <tr>
+            <td>VAT 15% (ضريبة القيمة المضافة):</td>
+            <td style="text-align: right;" id="vatTotal">0.00 SAR</td>
+          </tr>
+          <tr class="grand-row">
+            <td>Grand Total (المجموع شامل الضريبة):</td>
+            <td style="text-align: right;" id="grandTotal">0.00 SAR</td>
+          </tr>
+          <tr id="rowPrevBal" style="display:none; color:#475569;">
+            <td>Previous Due (الرصيد السابق للمورد):</td>
+            <td style="text-align: right;" id="dispPrevBal">0.00 SAR</td>
+          </tr>
+          <tr id="rowPaidCounter" style="display:none; color:#16a34a;">
+            <td>Paid at Inward (المدفوع حالياً):</td>
+            <td style="text-align: right;" id="dispPaidCounter">0.00 SAR</td>
+          </tr>
+          <tr id="rowNetDue" class="due-row" style="display:none;">
+            <td>Net Payable to Vendor (صافي المستحق للمورد):</td>
+            <td style="text-align: right;" id="netVendorBal">0.00 SAR</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="footer">
+        <div style="font-size: 11px; color: #64748b;">
+          Receiver Signature / توقيع المستلم: ___________________
+        </div>
+        <div class="stamp-box">
+          <p>Official Seal & Verification</p>
+          <div id="sealWrap"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function init() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const purId = urlParams.get('id');
+      if (!purId) return;
+
+      try {
+        const res = await fetch('/api/purchases/' + purId);
+        const json = await res.json();
+        if (!json.success) return;
+        const pur = json.data;
+        const s = json.store || {};
+
+        document.getElementById('storeNameEn').innerText = s.company_name_en || 'RETAIL STORE';
+        document.getElementById('storeNameAr').innerText = s.company_name_ar || '';
+        document.getElementById('storeVat').innerText = s.vat_number || 'N/A';
+        document.getElementById('storeCr').innerText = s.cr_number || 'N/A';
+        document.getElementById('storeAddress').innerText = (s.building_no || '') + ' ' + (s.street_en || '') + ', ' + (s.city_en || 'Saudi Arabia');
+        
+        if (s.store_seal_img) {
+          document.getElementById('sealWrap').innerHTML = `<img class="stamp-img" src="${s.store_seal_img}">`;
+        }
+
+        if (pur.is_return) {
+          document.getElementById('voucherTitle').innerText = 'PURCHASE RETURN / DEBIT NOTE';
+          document.getElementById('voucherTitleAr').innerText = 'إشعار مدين / مرتجع مشتريات';
+        }
+
+        document.getElementById('purNo').innerText = pur.purchase_no;
+        document.getElementById('purDate').innerText = pur.purchase_date;
+        document.getElementById('purTime').innerText = pur.purchase_time || '';
+        document.getElementById('suppInvNo').innerText = pur.supplier_inv_no || 'N/A';
+
+        document.getElementById('vendorName').innerText = pur.vendor_name || 'LOCAL CASH VENDOR';
+        document.getElementById('vendorPhone').innerText = pur.vendor_phone || 'N/A';
+        document.getElementById('vendorVat').innerText = pur.vendor_vat || 'N/A';
+        document.getElementById('vendorCr').innerText = pur.vendor_cr || 'N/A';
+
+        document.getElementById('payMode').innerText = pur.payment_method;
+        const counterPaid = (pur.paid_cash + pur.paid_bank);
+        document.getElementById('paidCounter').innerText = counterPaid.toFixed(2) + ' SAR';
+        document.getElementById('paidCredit').innerText = pur.paid_credit.toFixed(2) + ' SAR';
+
+        if (pur.party_id && (pur.payment_method === 'CREDIT' || pur.paid_credit > 0 || (json.party && json.party.sub_type === 'credit'))) {
+          document.getElementById('rowPrevBal').style.display = 'table-row';
+          document.getElementById('rowPaidCounter').style.display = 'table-row';
+          document.getElementById('rowNetDue').style.display = 'table-row';
+
+          document.getElementById('dispPrevBal').innerText = parseFloat(pur.prev_balance || 0).toFixed(2) + ' SAR';
+          document.getElementById('dispPaidCounter').innerText = counterPaid.toFixed(2) + ' SAR';
+          document.getElementById('netVendorBal').innerText = parseFloat(pur.net_balance || (json.party ? json.party.current_balance : 0)).toFixed(2) + ' SAR';
+        }
+
+        const tbody = document.getElementById('itemsBody');
+        tbody.innerHTML = '';
+        pur.items.forEach((it, idx) => {
+          const taxable = (it.line_total / 1.15);
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${idx + 1}</td>
+            <td><b>${it.name_en}</b><br><small style="color:#4f46e5;">${it.name_ar || ''}</small></td>
+            <td>${it.unit}</td>
+            <td style="text-align: center;">${it.quantity}</td>
+            <td style="text-align: right;">${(it.cost_price / 1.15).toFixed(2)}</td>
+            <td style="text-align: right;">${taxable.toFixed(2)}</td>
+            <td style="text-align: right;">${it.vat_amount.toFixed(2)}</td>
+            <td style="text-align: right;"><b>${it.line_total.toFixed(2)}</b></td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById('subTotal').innerText = pur.subtotal.toFixed(2) + ' SAR';
+        document.getElementById('vatTotal').innerText = pur.vat_amount.toFixed(2) + ' SAR';
+        document.getElementById('grandTotal').innerText = pur.total_amount.toFixed(2) + ' SAR';
+
+        if (urlParams.get('autoprint') === '1') {
+          setTimeout(() => { window.print(); }, 400);
+        }
+      } catch (err) { console.error(err); }
+    }
+    window.onload = init;
+  </script>
+</body>
+</html>

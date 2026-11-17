@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expenses, Payroll & Accounts Management</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f8fafc; color: #1e293b; padding: 20px 25px; }
+    .container { max-width: 1500px; margin: 0 auto; }
+    
+    .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .top-nav h2 { font-size: 22px; font-weight: 700; color: #0f172a; }
+    .btn-back { text-decoration: none; background: #e2e8f0; color: #334155; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; }
+
+    /* SUMMARY CARDS */
+    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+    @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr 1fr; } }
+    .sum-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+    .sum-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 4px; }
+    .sum-val { font-size: 22px; font-weight: 900; }
+    .color-cash { color: #16a34a; }
+    .color-bank { color: #2563eb; }
+    .color-salary { color: #dc2626; }
+    .color-bills { color: #d97706; }
+
+    /* EXPIRY ALERT BANNER */
+    .alert-banner { display: none; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; }
+    .alert-banner-title { font-size: 12px; font-weight: bold; color: #b91c1c; display: flex; align-items: center; gap: 6px; }
+
+    /* TABS */
+    .tab-bar { display: flex; gap: 8px; border-bottom: 2px solid #e2e8f0; margin-bottom: 16px; }
+    .tab-btn {
+      background: none; border: none; padding: 10px 22px; font-size: 15px; font-weight: 600;
+      color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px;
+    }
+    .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; }
+
+    /* FULL WIDTH PANEL */
+    .card { background: #fff; border-radius: 10px; border: 1px solid #e2e8f0; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+    
+    .btn-primary-add {
+      background: #16a34a; color: #fff; border: 1px solid #15803d; border-radius: 6px;
+      padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+    }
+    .btn-primary-add:hover { background: #15803d; }
+
+    .btn-action { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 5px 10px; border-radius: 5px; font-size: 11.5px; font-weight: 600; cursor: pointer; }
+    .btn-action:hover { background: #e2e8f0; }
+
+    .table-container { overflow-x: auto; max-height: calc(100vh - 290px); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+    th { background: #f8fafc; padding: 11px 10px; border-bottom: 2px solid #e2e8f0; color: #475569; position: sticky; top: 0; font-weight: 700; z-index: 5; }
+    td { padding: 9px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    tr:hover { background: #f8fafc; }
+
+    /* STATUS BADGES */
+    .badge { padding: 3px 7px; border-radius: 4px; font-size: 10.5px; font-weight: bold; }
+    .badge-green { background: #dcfce7; color: #15803d; }
+    .badge-yellow { background: #fef08a; color: #854d0e; }
+    .badge-red { background: #fee2e2; color: #b91c1c; }
+    .badge-gray { background: #f1f5f9; color: #64748b; }
+
+    /* SPLIT PAYMENT BOX */
+    .split-pay-box { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 10px; margin-bottom: 12px; }
+    .split-pay-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+
+    /* MODAL POPUPS */
+    .modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.65); z-index: 1000; justify-content: center; align-items: center;
+    }
+    .modal-box {
+      background: #fff; padding: 22px; border-radius: 12px; width: 92%; max-width: 550px;
+      max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 14px; }
+    .modal-header h3 { font-size: 16px; color: #0f172a; font-weight: 700; }
+    .btn-close-modal { border: none; background: none; font-size: 24px; color: #64748b; cursor: pointer; }
+
+    .form-group { margin-bottom: 10px; }
+    .form-group label { display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 3px; }
+    .form-group input, .form-group select { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btn-submit { width: 100%; background: #16a34a; color: #fff; border: none; padding: 10px; border-radius: 6px; font-size: 13.5px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+    .btn-submit:hover { background: #15803d; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="top-nav">
+      <h2>💸 Expenses, Payroll & Accounts / المصروفات والرواتب</h2>
+      <a href="index.html" class="btn-back">⬅ Dashboard</a>
+    </div>
+
+    <!-- 4 LIVE SUMMARY CARDS -->
+    <div class="summary-grid">
+      <div class="sum-card">
+        <div class="sum-title">💵 Cash in Hand (الدرج)</div>
+        <div class="sum-val color-cash" id="dispCashInHand">0.00 SAR</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-title">💳 Bank Balance (البنك)</div>
+        <div class="sum-val color-bank" id="dispBankBal">0.00 SAR</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-title">👥 Salaries Due (مستحقات الرواتب)</div>
+        <div class="sum-val color-salary" id="dispSalariesDue">0.00 SAR</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-title">💡 Pending Bills (فواتير معلقة)</div>
+        <div class="sum-val color-bills" id="dispBillsDue">0.00 SAR</div>
+      </div>
+    </div>
+
+    <!-- DOCUMENT EXPIRY ALERT BANNER -->
+    <div id="alertBanner" class="alert-banner">
+      <div class="alert-banner-title">⚠️ DOCUMENT EXPIRY NOTIFICATION / تنبيه انتهاء الوثائق:</div>
+      <div id="alertItemsList" style="font-size: 12px; margin-top: 4px; color: #991b1b;"></div>
+    </div>
+
+    <!-- 3 TABS -->
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tabBtnEmp" onclick="switchMainTab('employees')">👥 Employees & Salaries / الرواتب</button>
+      <button class="tab-btn" id="tabBtnUtil" onclick="switchMainTab('utilities')">💡 Monthly Bills / فواتير الخدمات</button>
+      <button class="tab-btn" id="tabBtnPetty" onclick="switchMainTab('petty')">☕ Daily Petty Cash / المصروفات اليومية</button>
+    </div>
+
+    <!-- TAB 1: EMPLOYEES & SALARIES -->
+    <div id="panelEmployees" class="card">
+      <div class="toolbar">
+        <button class="btn-primary-add" onclick="openAddEmployeeModal()">➕ Add New Employee / إضافة موظف</button>
+        <input type="text" id="empSearchInput" placeholder="🔍 Search Employee, Phone, Iqama..." oninput="renderEmployeesTable()" style="padding: 6px 12px; font-size: 12.5px; border-radius: 6px; border: 1px solid #cbd5e1; width: 260px;">
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Employee Name</th>
+              <th>Phone</th>
+              <th>Monthly Salary</th>
+              <th>Joining Date</th>
+              <th>Iqama Expiry</th>
+              <th>Baladiya Card</th>
+              <th>Balance Due (SAR)</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="employeesTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 2: UTILITIES & MONTHLY BILLS -->
+    <div id="panelUtilities" class="card" style="display: none;">
+      <div class="toolbar">
+        <button class="btn-primary-add" onclick="openAddUtilityModal()">➕ Add New Utility / إضافة خدمة وفاتورة</button>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Utility / Service Name</th>
+              <th>Category</th>
+              <th>Account No</th>
+              <th>Pending Due (SAR)</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="utilitiesTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 3: DAILY PETTY EXPENSES -->
+    <div id="panelPetty" class="card" style="display: none;">
+      <div class="toolbar">
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-primary-add" onclick="openAddPettyModal()">➕ Add Daily Expense / تسجيل مصروف</button>
+          <button class="btn-action" style="background:#e2e8f0; font-weight:bold;" onclick="openCategoriesModal()">⚙️ Manage Categories</button>
+        </div>
+        <span style="font-size: 12px; font-weight: bold; color: #475569;">Today's Petty Cash: <b id="dispTodayPettyTotal" style="color:#dc2626;">0.00 SAR</b></span>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Category</th>
+              <th>Paid Via</th>
+              <th>Amount (SAR)</th>
+              <th>Notes / Details</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="pettyTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------- -->
+  <!-- MODAL 1: ADD / EDIT EMPLOYEE (WITH OPENING BALANCE EDITABLE) -->
+  <!-- ------------------------------------------------------------- -->
+  <div id="employeeModal" class="modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="empModalTitle">➕ Add New Employee / إضافة موظف</h3>
+        <button type="button" class="btn-close-modal" onclick="closeModal('employeeModal')">&times;</button>
+      </div>
+      <form onsubmit="handleEmployeeSubmit(event)">
+        <input type="hidden" id="emp_edit_id">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Name (English) *</label>
+            <input type="text" id="emp_name_en" required placeholder="NAME" style="text-transform: uppercase;">
+          </div>
+          <div class="form-group">
+            <label>Name (Arabic) / الاسم بالعربي</label>
+            <input type="text" id="emp_name_ar" placeholder="الاسم بالعربي" style="direction: rtl;">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Mobile Number *</label>
+            <input type="text" id="emp_phone" required placeholder="05xxxxxxxx">
+          </div>
+          <div class="form-group">
+            <label>Iqama Number (رقم الإقامة)</label>
+            <input type="text" id="emp_iqama" placeholder="2xxxxxxxxx">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Iqama Expiry Date</label>
+            <input type="date" id="emp_iqama_exp">
+          </div>
+          <div class="form-group">
+            <label>Baladiya Card Expiry (كرت البلدية)</label>
+            <input type="date" id="emp_baladiya_exp">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Joining Date (تاريخ المباشرة) *</label>
+            <input type="date" id="emp_join_date" required>
+          </div>
+          <div class="form-group">
+            <label>Monthly Salary (الراتب الشهري) *</label>
+            <input type="number" step="0.01" id="emp_salary" required placeholder="0.00">
+          </div>
+        </div>
+
+        <!-- OPENING BALANCE IS EDITABLE IN BOTH ADD & EDIT MODE! -->
+        <div class="form-group" id="empOpenBalWrap">
+          <label>Opening / Old Balance (الرصيد الافتتاحي)</label>
+          <input type="number" step="0.01" id="emp_open_bal" value="0.00">
+          <small style="color: #64748b; font-size: 10px;">(+) if store owes employee, (-) if employee owes advance.</small>
+        </div>
+
+        <button type="submit" class="btn-submit">Save Employee / حفظ الموظف</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------- -->
+  <!-- MODAL 2: PAY EMPLOYEE (SPLIT CASH + BANK SIMULTANEOUSLY) -->
+  <!-- ------------------------------------------------------------- -->
+  <div id="paySalaryModal" class="modal">
+    <div class="modal-box" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3>💰 Pay Employee / صرف للموظف</h3>
+        <button type="button" class="btn-close-modal" onclick="closeModal('paySalaryModal')">&times;</button>
+      </div>
+      <form onsubmit="handleSalaryPaymentSubmit(event)">
+        <input type="hidden" id="pay_emp_id">
+        <div class="form-group">
+          <label>Employee:</label>
+          <b id="pay_emp_name" style="font-size: 14px; color: #2563eb;"></b>
+        </div>
+        <div class="form-group">
+          <label>Current Outstanding Due:</label>
+          <b id="pay_emp_due" style="font-size: 16px; color: #dc2626;">0.00 SAR</b>
+        </div>
+
+        <div class="split-pay-box">
+          <label style="font-size:11px; font-weight:bold; color:#475569;">Enter Payment Breakdown:</label>
+          <div class="split-pay-row">
+            <div>
+              <label style="color:#16a34a; font-size:10.5px; font-weight:bold;">💵 Cash (SAR)</label>
+              <input type="number" step="0.01" id="pay_cash_amt" placeholder="0.00" onfocus="this.select()">
+            </div>
+            <div>
+              <label style="color:#2563eb; font-size:10.5px; font-weight:bold;">💳 Bank (SAR)</label>
+              <input type="number" step="0.01" id="pay_bank_amt" placeholder="0.00" onfocus="this.select()">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="pay_salary_date">
+          </div>
+          <div class="form-group">
+            <label>Notes / Ref</label>
+            <input type="text" id="pay_salary_notes" placeholder="Notes (e.g. Salary, Advance)">
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit">Confirm Payment / تأكيد الصرف</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------- -->
+  <!-- MODAL 3: BORROW CASH FROM EMPLOYEE (RECEIVE CASH INTO SHOP) -->
+  <!-- ------------------------------------------------------------- -->
+  <div id="borrowCashModal" class="modal">
+    <div class="modal-box" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 style="color:#16a34a;">📥 Receive Cash from Employee</h3>
+        <button type="button" class="btn-close-modal" onclick="closeModal('borrowCashModal')">&times;</button>
+      </div>
+      <form onsubmit="handleBorrowCashSubmit(event)">
+        <input type="hidden" id="borrow_emp_id">
+        <div class="form-group">
+          <label>Employee Name:</label>
+          <b id="borrow_emp_name" style="font-size: 14px; color: #2563eb;"></b>
+        </div>
+        <div style="background:#f0fdf4; border:1px dashed #86efac; padding:8px; border-radius:6px; font-size:11px; color:#166534; margin-bottom:10px;">
+          ✓ Increases shop's Cash in Hand<br>
+          ✓ Adds credit to employee ledger (store owes them)
+        </div>
+        <div class="form-group">
+          <label>Amount Received (SAR) *</label>
+          <input type="number" step="0.01" id="borrow_amount" required placeholder="0.00" style="font-size:16px; font-weight:bold;">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="borrow_date">
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <input type="text" id="borrow_notes" placeholder="Reason (e.g. Vendor Cash Urgent)">
+          </div>
+        </div>
+        <button type="submit" class="btn-submit" style="background:#16a34a;">Receive Cash into Drawer</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------- -->
+  <!-- MODAL 4: END DUTY & LEAVE SETTLEMENT -->
+  <!-- ------------------------------------------------------------- -->
+  <div id="endDutyModal" class="modal">
+    <div class="modal-box" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 style="color:#b91c1c;">🛑 End Duty / Leave Settlement</h3>
+        <button type="button" class="btn-close-modal" onclick="closeModal('endDutyModal')">&times;</button>
+      </div>
+      <form onsubmit="handleEndDutySubmit(event)">
+        <input type="hidden" id="ed_emp_id">
+        <div class="form-group">
+          <label>Employee:</label>
+          <b id="ed_emp_name" style="font-size: 14px;"></b>
+        </div>
+        <div class="form-group">
+          <label>End Date (Last Working Day) *</label>
+          <input type="date" id="ed_end_date" required onchange="calculateProRata()">
+        </div>
+
+        <div style="background:#fef2f2; border:1px solid #fecaca; padding:10px; border-radius:6px; font-size:12px; margin-bottom:12px;">
+          <div>Monthly Salary: <b id="ed_monthly_sal">0.00 SAR</b> (Daily: <span id="ed_daily_sal">0.00</span>)</div>
+          <div>Days Worked: <b id="ed_days_worked" style="color:#b91c1c;">0 Days</b></div>
+          <div>Pro-rata Salary: <b id="ed_prorata_amt" style="color:#15803d;">0.00 SAR</b></div>
+          <hr style="margin:6px 0; border:none; border-top:1px dashed #fca5a5;">
+          <div style="font-size:13px; font-weight:bold;">Total Final Settlement: <span id="ed_final_due" style="color:#dc2626; font-size:15px;">0.00 SAR</span></div>
+        </div>
+
+        <div class="form-group">
+          <label><input type="checkbox" id="ed_pay_now" checked onchange="toggleEndDutyPayMode(this.checked)"> Pay Full Settlement Now</label>
+        </div>
+
+        <div id="ed_paymode_wrap" class="split-pay-box">
+          <div class="split-pay-row">
+            <div>
+              <label style="color:#16a34a; font-size:10.5px; font-weight:bold;">💵 Cash (SAR)</label>
+              <input type="number" step="0.01" id="ed_cash_amt" placeholder="0.00">
+            </div>
+            <div>
+              <label style="color:#2563eb; font-size:10.5px; font-weight:bold;">💳 Bank (SAR)</label>
+              <input type="number" step="0.01" id="ed_bank_amt" placeholder="0.00">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit" style="background:#b91c1c;">Complete Settlement & Stop Duty</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------- -->
+  <!-- MODAL 5: EMPLOYEE STATEMENT -->
+  <!-- ------------------------------------------------------------- -->
+  <div id="statementModal" class="modal">
+    <div class="modal-box" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3 id="stmtTitle">📄 Employee Statement</h3>
+        <button type="button" class="btn-close-modal" onclick="closeModal('statementModal')">&times;</button>
+      </div>
+      <div id="statementBody"></div>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------- -->
+  <!-- MODAL 6: ADD / EDIT UTILITY (FULL CRUD) -->
+  <!-- ------------------------------------------------------------- -->
+  <div id="addEditUtilityModal" class="modal">
+    <div class="modal-box" style="max-width: 460px;">
+      <div class="modal-header">
+        <h3 id="utilFormTitle">➕ Add Utility Service / إضافة خدمة</h3>
+        <button type="button" class="btn-close-modal" onclick="closeModal('addEditUtilityModal')">&times;</button>
+      </div>
+      <form onsubmit="handleSaveUtility(event)">
+        <input type="hidden" id="util_edit_id">
+        <div class="form-group">
+          <label>Utility Name (English) *</label>
+          <input type="text" id="util_form_name_en" required placeholder="e.g. ELECTRICITY METER #2">
+        </div>
+        <div class="form-group">
+          <label>Utility Name (Arabic) / الاسم بالعربي</label>
+          <input type="text" id="util_form_name_ar" placeholder="فاتورة الكهرباء عداد ٢" style="direction:rtl;">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category</label>
+            <select id="util_form_cat">
+              <option value="ELECTRICITY">⚡ Electricity (كهرباء)</option>
+              <option value="INTERNET">🌐 Internet & Phone (هاتف وإنترنت)</option>
+              <option value="RENT">🏢 Shop / Warehouse Rent (إيجار)</option>
+              <option value="WATER">💧 Water Bill (مياه)</option>
+              <option value="MUNICIPALITY">🏛️ Baladiya / Govt (بلدية ورسوم)</option>
+              <option value="GENERAL">🏷️ Other Utility (أخرى)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Account / Meter No</label>
+            <input type="text" id="util_form_acc" placeholder="Account #">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Opening Pending Due (SAR)</label>
+          <input type="number" step="0.01" id="util_form_due" value="0.00">
+        </div>
+        <button type="submit" class="btn-submit">Save Utility / حفظ الخدمة</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------- -->
+  <!-- MODAL 7: ADD BILL OR PAY UTILITY (SPLIT CASH + BANK) -->
+  <!-- ------------------------------------------------------------- -->
+  <div id="utilityTransModal" class="modal">
+    <div class="modal-box" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 id="utilTransTitle">⚡ Utility Transaction</h3>
+        <button type="button" class="btn-close-modal" onclick="closeModal('utilityTransModal')">&times;</button>
+      </div>
+      <form onsubmit="handleUtilityTransSubmit(event)">
+        <input type="hidden" id="ut_id">
+        <input type="hidden" id="ut_action">
+        
+        <div class="form-group">
+          <label>Service:</label>
+          <b id="ut_name" style="font-size: 14px; color:#2563eb;"></b>
+        </div>
+        <div class="form-group">
+          <label>Current Outstanding Due:</label>
+          <b id="ut_due" style="font-size: 15px; color:#dc2626;">0.00 SAR</b>
+        </div>
+
+        <div id="ut_add_bill_wrap" class="form-group">
+          <label>New Bill Amount (SAR) *</label>
+          <input type="number" step="0.01" id="ut_bill_amt" placeholder="0.00" style="font-size:15px; font-weight:bold;">
+        </div>
+
+        <div id="ut_pay_wrap" class="split-pay-box" style="display: none;">
+          <label style="font-size:11px; font-weight:bold; color:#475569;">Enter Payment Amount:</label>
+          <div class="split-pay-row">
+            <div>
+              <label style="color:#16a34a; font-size:10.5px; font-weight:bold;">💵 Cash (SAR)</label>
+              <input type="number" step="0.01" id="ut_cash_amt" placeholder="0.00" onfocus="this.select()">
+            </div>
+            <div>
+              <label style="color:#2563eb; font-size:10.5px; font-weight:bold;">💳 Bank (SAR)</label>
+              <input type="number" step="0.01" id="ut_bank_amt" placeholder="0.00" onfocus="this.select()">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="ut_date">
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <input type="text" id="ut_notes" placeholder="Invoice / Month Ref">
+          </div>
+        </div>
+
+        <button type="submit" id="btnUtSubmit" class="btn-submit">Confirm</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------- -->
+  <!-- MODAL 8: MANAGE PETTY CATEGORIES (CRUD) -->
+  <!-- ------------------------------------------------------------- -->
+  <div id="categoriesModal" class="modal">
+    <div class="modal-box" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>⚙️ Manage Petty Cash Categories</h3>
+        <button type="button" class="btn-close-modal" onclick="closeModal('categoriesModal')">&times;</button>
+      </div>
+      
+      <!-- Add Category Form -->
+      <form onsubmit="handleAddPettyCat(event)" style="display:flex; gap:6px; margin-bottom:14px;">
+        <input type="text" id="new_cat_name" required placeholder="New Category Name (e.g. MILK / BREAD)" style="flex:1; padding:7px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; text-transform:uppercase;">
+        <button type="submit" class="btn-primary-add" style="padding:7px 14px;">➕ Add</button>
+      </form>
+
+      <!-- Categories List Table -->
+      <div style="max-height: 250px; overflow-y: auto;">
+        <table style="width:100%; font-size:12px;">
+          <thead>
+            <tr style="background:#f1f5f9;"><th style="padding:6px;">Category Name</th><th width="70">Action</th></tr>
+          </thead>
+          <tbody id="pettyCategoriesListBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------- -->
+  <!-- MODAL 9: ADD DAILY PETTY EXPENSE (SPLIT CASH + BANK) -->
+  <!-- ------------------------------------------------------------- -->
+  <div id="pettyModal" class="modal">
+    <div class="modal-box" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3>☕ Add Daily Petty Expense / تسجيل مصروف</h3>
+        <button type="button" class="btn-close-modal" onclick="closeModal('pettyModal')">&times;</button>
+      </div>
+      <form onsubmit="handlePettySubmit(event)">
+        <div class="form-group">
+          <label>Expense Category *</label>
+          <select id="petty_cat" class="form-group"></select>
+        </div>
+
+        <div class="split-pay-box">
+          <label style="font-size:11px; font-weight:bold; color:#475569;">Paid Breakdown (Deducts Account):</label>
+          <div class="split-pay-row">
+            <div>
+              <label style="color:#16a34a; font-size:10.5px; font-weight:bold;">💵 Cash Drawer (SAR)</label>
+              <input type="number" step="0.01" id="petty_cash_amt" placeholder="0.00" onfocus="this.select()">
+            </div>
+            <div>
+              <label style="color:#2563eb; font-size:10.5px; font-weight:bold;">💳 Bank Card (SAR)</label>
+              <input type="number" step="0.01" id="petty_bank_amt" placeholder="0.00" onfocus="this.select()">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="petty_date">
+          </div>
+          <div class="form-group">
+            <label>Description / Details</label>
+            <input type="text" id="petty_desc" placeholder="Details (e.g. 2 Teas, Milk)">
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit">Save Expense / حفظ المصروف</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let employeesList = [];
+    let utilitiesList = [];
+    let pettyCategories = [];
+    let pettyList = [];
+
+    window.onload = async () => {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      document.getElementById('emp_join_date').value = todayStr;
+      document.getElementById('pay_salary_date').value = todayStr;
+      document.getElementById('borrow_date').value = todayStr;
+      document.getElementById('ed_end_date').value = todayStr;
+      document.getElementById('ut_date').value = todayStr;
+      document.getElementById('petty_date').value = todayStr;
+
+      await loadDashboardSummary();
+      await loadEmployees();
+      await loadUtilities();
+      await loadPettyCategories();
+      await loadPetty();
+    };
+
+    async function loadDashboardSummary() {
+      try {
+        const res = await fetch('/api/expenses/dashboard-summary');
+        const j = await res.json();
+        if (j.success && j.data) {
+          const d = j.data;
+          document.getElementById('dispCashInHand').innerText = d.cashInHand.toFixed(2) + ' SAR';
+          document.getElementById('dispBankBal').innerText = d.bankBalance.toFixed(2) + ' SAR';
+          document.getElementById('dispSalariesDue').innerText = d.totalSalaryDue.toFixed(2) + ' SAR';
+          document.getElementById('dispBillsDue').innerText = d.totalUtilityDue.toFixed(2) + ' SAR';
+
+          const alertBanner = document.getElementById('alertBanner');
+          const alertList = document.getElementById('alertItemsList');
+          if (d.alerts && d.alerts.length > 0) {
+            alertBanner.style.display = 'block';
+            alertList.innerHTML = d.alerts.map(a => {
+              const iq = checkDocStatus(a.iqama_expiry);
+              const bal = checkDocStatus(a.baladiya_expiry);
+              return `• <b>${a.name_en}</b> (Iqama ${a.iqama_no||''}): Iqama: ${iq.label}, Baladiya: ${bal.label}`;
+            }).join('<br>');
+          } else {
+            alertBanner.style.display = 'none';
+          }
+        }
+      } catch (e) {}
+    }
+
+    function checkDocStatus(dateStr) {
+      if (!dateStr) return { status: 'none', label: 'N/A', cls: 'badge-gray' };
+      const expDate = new Date(dateStr);
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const diffDays = Math.floor((expDate - today) / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) return { status: 'expired', label: 'EXPIRED (' + dateStr + ')', cls: 'badge-red' };
+      if (diffDays <= 7) return { status: 'warning', label: 'EXP IN ' + diffDays + ' DAYS (' + dateStr + ')', cls: 'badge-yellow' };
+      return { status: 'valid', label: dateStr, cls: 'badge-green' };
+    }
+
+    function switchMainTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('panelEmployees').style.display = 'none';
+      document.getElementById('panelUtilities').style.display = 'none';
+      document.getElementById('panelPetty').style.display = 'none';
+
+      if (tab === 'employees') {
+        document.getElementById('tabBtnEmp').classList.add('active');
+        document.getElementById('panelEmployees').style.display = 'block';
+      } else if (tab === 'utilities') {
+        document.getElementById('tabBtnUtil').classList.add('active');
+        document.getElementById('panelUtilities').style.display = 'block';
+      } else if (tab === 'petty') {
+        document.getElementById('tabBtnPetty').classList.add('active');
+        document.getElementById('panelPetty').style.display = 'block';
+      }
+    }
+
+    // -------------------------------------------------------------
+    // EMPLOYEES
+    // -------------------------------------------------------------
+    async function loadEmployees() {
+      try {
+        const res = await fetch('/api/expenses/employees');
+        const j = await res.json();
+        if (j.success) {
+          employeesList = j.data;
+          renderEmployeesTable();
+        }
+      } catch (e) {}
+    }
+
+    function renderEmployeesTable() {
+      const search = (document.getElementById('empSearchInput').value || '').toLowerCase();
+      const tbody = document.getElementById('employeesTableBody');
+      tbody.innerHTML = '';
+
+      const filtered = employeesList.filter(e => {
+        return e.name_en.toLowerCase().includes(search) ||
+               (e.name_ar && e.name_ar.includes(search)) ||
+               e.phone.includes(search) ||
+               (e.iqama_no && e.iqama_no.includes(search));
+      });
+
+      filtered.forEach(e => {
+        const iqStat = checkDocStatus(e.iqama_expiry);
+        const balStat = checkDocStatus(e.baladiya_expiry);
+        const tr = document.createElement('tr');
+        const isLeave = e.status === 'on_leave';
+
+        tr.innerHTML = `
+          <td><b>${e.name_en}</b><br><small style="color:#2563eb;">${e.name_ar || ''}</small></td>
+          <td>${e.phone}</td>
+          <td><b>${parseFloat(e.monthly_salary).toFixed(2)}</b></td>
+          <td>${e.joining_date}</td>
+          <td><span class="badge ${iqStat.cls}">${iqStat.label}</span></td>
+          <td><span class="badge ${balStat.cls}">${balStat.label}</span></td>
+          <td><b style="color:${e.current_balance > 0 ? '#dc2626' : '#16a34a'}; font-size:14px;">${parseFloat(e.current_balance).toFixed(2)}</b></td>
+          <td><span class="badge ${isLeave ? 'badge-yellow' : 'badge-green'}">${isLeave ? 'ON LEAVE' : 'ACTIVE'}</span></td>
+          <td style="white-space:nowrap; display:flex; gap:3px;">
+            <button class="btn-action" style="background:#dcfce7; color:#15803d; border-color:#86efac; font-weight:bold;" onclick="openPaySalaryModal(${e.id})">💰 Pay</button>
+            <button class="btn-action" style="background:#fef08a; color:#854d0e; font-weight:bold;" title="Borrow Cash into Drawer" onclick="openBorrowCashModal(${e.id})">📥 Borrow</button>
+            <button class="btn-action" onclick="openStatementModal(${e.id})">📄 Stmt</button>
+            ${isLeave ? 
+              `<button class="btn-action" style="background:#2563eb; color:#fff;" onclick="rejoinDuty(${e.id})">▶️ Rejoin</button>` : 
+              `<button class="btn-action" style="color:#b91c1c; border-color:#fca5a5;" onclick="openEndDutyModal(${e.id})">🛑 Leave</button>`
+            }
+            <button class="btn-action" onclick="openEditEmployeeModal(${e.id})">✏️</button>
+            <button class="btn-action" style="color:#b91c1c; border-color:#fca5a5;" onclick="deleteEmployee(${e.id}, '${e.name_en.replace(/'/g, "\\'")}')">🗑️</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openAddEmployeeModal() {
+      document.getElementById('emp_edit_id').value = '';
+      document.getElementById('empModalTitle').innerText = '➕ Add New Employee / إضافة موظف';
+      document.getElementById('emp_name_en').value = '';
+      document.getElementById('emp_name_ar').value = '';
+      document.getElementById('emp_phone').value = '';
+      document.getElementById('emp_iqama').value = '';
+      document.getElementById('emp_iqama_exp').value = '';
+      document.getElementById('emp_baladiya_exp').value = '';
+      document.getElementById('emp_salary').value = '';
+      document.getElementById('emp_open_bal').value = '0.00';
+      document.getElementById('employeeModal').style.display = 'flex';
+      setTimeout(() => document.getElementById('emp_name_en').focus(), 100);
+    }
+
+    function openEditEmployeeModal(empId) {
+      const e = employeesList.find(x => x.id === empId);
+      if (!e) return;
+      document.getElementById('emp_edit_id').value = e.id;
+      document.getElementById('empModalTitle').innerText = 'Edit Employee #' + e.id;
+      document.getElementById('emp_name_en').value = e.name_en;
+      document.getElementById('emp_name_ar').value = e.name_ar || '';
+      document.getElementById('emp_phone').value = e.phone;
+      document.getElementById('emp_iqama').value = e.iqama_no || '';
+      document.getElementById('emp_iqama_exp').value = e.iqama_expiry || '';
+      document.getElementById('emp_baladiya_exp').value = e.baladiya_expiry || '';
+      document.getElementById('emp_join_date').value = e.joining_date;
+      document.getElementById('emp_salary').value = e.monthly_salary;
+      document.getElementById('emp_open_bal').value = (e.opening_balance !== undefined) ? e.opening_balance : 0;
+      document.getElementById('employeeModal').style.display = 'flex';
+    }
+
+    async function handleEmployeeSubmit(e) {
+      e.preventDefault();
+      const editId = document.getElementById('emp_edit_id').value;
+      const payload = {
+        name_en: document.getElementById('emp_name_en').value.toUpperCase().trim(),
+        name_ar: document.getElementById('emp_name_ar').value.trim(),
+        phone: document.getElementById('emp_phone').value.trim(),
+        iqama_no: document.getElementById('emp_iqama').value.trim(),
+        iqama_expiry: document.getElementById('emp_iqama_exp').value || null,
+        baladiya_expiry: document.getElementById('emp_baladiya_exp').value || null,
+        joining_date: document.getElementById('emp_join_date').value,
+        monthly_salary: parseFloat(document.getElementById('emp_salary').value) || 0,
+        opening_balance: parseFloat(document.getElementById('emp_open_bal').value) || 0
+      };
+
+      const url = editId ? `/api/expenses/employees/${editId}` : '/api/expenses/employees';
+      const method = editId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const j = await res.json();
+      if (j.success) {
+        closeModal('employeeModal');
+        await loadEmployees();
+        await loadDashboardSummary();
+      } else { alert('Error: ' + j.error); }
+    }
+
+    async function deleteEmployee(id, name) {
+      if (!confirm(`Are you sure you want to delete employee "${name}"?\nAll payroll and ledger entries will be removed.`)) return;
+      const res = await fetch('/api/expenses/employees/' + id, { method: 'DELETE' });
+      const j = await res.json();
+      if (j.success) {
+        await loadEmployees();
+        await loadDashboardSummary();
+      } else { alert('Delete error: ' + j.error); }
+    }
+
+    // Pay Employee (Split Cash + Bank)
+    function openPaySalaryModal(empId) {
+      const e = employeesList.find(x => x.id === empId);
+      if (!e) return;
+      document.getElementById('pay_emp_id').value = e.id;
+      document.getElementById('pay_emp_name').innerText = e.name_en;
+      document.getElementById('pay_emp_due').innerText = parseFloat(e.current_balance).toFixed(2) + ' SAR';
+      document.getElementById('pay_cash_amt').value = Math.max(0, e.current_balance).toFixed(2);
+      document.getElementById('pay_bank_amt').value = '';
+      document.getElementById('paySalaryModal').style.display = 'flex';
+      setTimeout(() => document.getElementById('pay_cash_amt').focus(), 100);
+    }
+
+    async function handleSalaryPaymentSubmit(e) {
+      e.preventDefault();
+      const empId = document.getElementById('pay_emp_id').value;
+      const payload = {
+        paid_cash: parseFloat(document.getElementById('pay_cash_amt').value) || 0,
+        paid_bank: parseFloat(document.getElementById('pay_bank_amt').value) || 0,
+        entry_date: document.getElementById('pay_salary_date').value,
+        description: document.getElementById('pay_salary_notes').value
+      };
+
+      const res = await fetch(`/api/expenses/employees/${empId}/pay`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const j = await res.json();
+      if (j.success) {
+        closeModal('paySalaryModal');
+        await loadEmployees();
+        await loadDashboardSummary();
+      } else { alert('Error: ' + j.error); }
+    }
+
+    // Borrow Cash From Employee
+    function openBorrowCashModal(empId) {
+      const e = employeesList.find(x => x.id === empId);
+      if (!e) return;
+      document.getElementById('borrow_emp_id').value = e.id;
+      document.getElementById('borrow_emp_name').innerText = e.name_en;
+      document.getElementById('borrow_amount').value = '';
+      document.getElementById('borrow_notes').value = '';
+      document.getElementById('borrowCashModal').style.display = 'flex';
+      setTimeout(() => document.getElementById('borrow_amount').focus(), 100);
+    }
+
+    async function handleBorrowCashSubmit(e) {
+      e.preventDefault();
+      const empId = document.getElementById('borrow_emp_id').value;
+      const payload = {
+        amount: parseFloat(document.getElementById('borrow_amount').value),
+        entry_date: document.getElementById('borrow_date').value,
+        description: document.getElementById('borrow_notes').value
+      };
+
+      const res = await fetch(`/api/expenses/employees/${empId}/borrow-cash`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const j = await res.json();
+      if (j.success) {
+        alert('Cash received into drawer and added to employee credit!');
+        closeModal('borrowCashModal');
+        await loadEmployees();
+        await loadDashboardSummary();
+      } else { alert('Error: ' + j.error); }
+    }
+
+    // End Duty / Leave
+    let activeEndDutyEmp = null;
+    function openEndDutyModal(empId) {
+      activeEndDutyEmp = employeesList.find(x => x.id === empId);
+      if (!activeEndDutyEmp) return;
+      document.getElementById('ed_emp_id').value = activeEndDutyEmp.id;
+      document.getElementById('ed_emp_name').innerText = activeEndDutyEmp.name_en;
+      document.getElementById('ed_monthly_sal').innerText = activeEndDutyEmp.monthly_salary.toFixed(2) + ' SAR';
+      document.getElementById('ed_daily_sal').innerText = ((activeEndDutyEmp.monthly_salary||0)/30).toFixed(2);
+      calculateProRata();
+      document.getElementById('endDutyModal').style.display = 'flex';
+    }
+
+    function calculateProRata() {
+      if (!activeEndDutyEmp) return;
+      const endDate = new Date(document.getElementById('ed_end_date').value);
+      const lastDate = new Date(activeEndDutyEmp.last_accrual_date || activeEndDutyEmp.joining_date);
+      const diffDays = Math.max(0, Math.floor((endDate - lastDate) / (1000 * 60 * 60 * 24)));
+      const daily = (activeEndDutyEmp.monthly_salary || 0) / 30;
+      const proRata = Math.round(diffDays * daily * 100) / 100;
+      const finalDue = activeEndDutyEmp.current_balance + proRata;
+
+      document.getElementById('ed_days_worked').innerText = diffDays + ' Days';
+      document.getElementById('ed_prorata_amt').innerText = proRata.toFixed(2) + ' SAR';
+      document.getElementById('ed_final_due').innerText = finalDue.toFixed(2) + ' SAR';
+      document.getElementById('ed_cash_amt').value = finalDue > 0 ? finalDue.toFixed(2) : '0.00';
+      document.getElementById('ed_bank_amt').value = '';
+    }
+
+    function toggleEndDutyPayMode(checked) {
+      document.getElementById('ed_paymode_wrap').style.display = checked ? 'block' : 'none';
+    }
+
+    async function handleEndDutySubmit(e) {
+      e.preventDefault();
+      const empId = document.getElementById('ed_emp_id').value;
+      const payload = {
+        end_date: document.getElementById('ed_end_date').value,
+        pay_settlement_now: document.getElementById('ed_pay_now').checked,
+        paid_cash: parseFloat(document.getElementById('ed_cash_amt').value) || 0,
+        paid_bank: parseFloat(document.getElementById('ed_bank_amt').value) || 0
+      };
+
+      const res = await fetch(`/api/expenses/employees/${empId}/end-duty`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const j = await res.json();
+      if (j.success) {
+        closeModal('endDutyModal');
+        await loadEmployees();
+        await loadDashboardSummary();
+      } else { alert('Error: ' + j.error); }
+    }
+
+    async function rejoinDuty(empId) {
+      const rejoinDate = prompt('Enter Rejoin Date (YYYY-MM-DD):', new Date().toISOString().slice(0, 10));
+      if (!rejoinDate) return;
+      const res = await fetch(`/api/expenses/employees/${empId}/rejoin`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ rejoin_date: rejoinDate })
+      });
+      const j = await res.json();
+      if (j.success) {
+        await loadEmployees();
+        await loadDashboardSummary();
+      } else { alert('Error: ' + j.error); }
+    }
+
+    async function openStatementModal(empId) {
+      const res = await fetch(`/api/expenses/employees/${empId}/statement`);
+      const j = await res.json();
+      if (j.success) {
+        const emp = j.employee;
+        document.getElementById('stmtTitle').innerText = 'Statement: ' + emp.name_en;
+        let rows = '';
+        j.entries.forEach(e => {
+          rows += `
+            <tr>
+              <td>${e.entry_date}</td>
+              <td><b>${e.entry_type}</b></td>
+              <td>${e.description} ${e.payment_mode ? '(' + e.payment_mode + ')' : ''}</td>
+              <td style="color:#15803d;">${e.debit > 0 ? e.debit.toFixed(2) : '—'}</td>
+              <td style="color:#dc2626;">${e.credit > 0 ? e.credit.toFixed(2) : '—'}</td>
+              <td><b>${e.balance_after.toFixed(2)}</b></td>
+            </tr>
+          `;
+        });
+
+        document.getElementById('statementBody').innerHTML = `
+          <div style="background:#f8fafc; padding:10px; border-radius:6px; margin-bottom:12px; display:flex; justify-content:space-between; font-size:12px;">
+            <div><b>Phone:</b> ${emp.phone} | <b>Iqama:</b> ${emp.iqama_no||'N/A'}<br><b>Monthly Salary:</b> ${emp.monthly_salary.toFixed(2)} SAR</div>
+            <div style="text-align:right;"><b>Net Balance Due:</b> <span style="font-size:16px; color:#dc2626; font-weight:bold;">${emp.current_balance.toFixed(2)} SAR</span></div>
+          </div>
+          <table style="width:100%; border-collapse:collapse; font-size:12px;">
+            <thead>
+              <tr style="background:#f1f5f9;"><th>Date</th><th>Type</th><th>Description</th><th>Paid (Debit)</th><th>Earned (Credit)</th><th>Balance</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        `;
+        document.getElementById('statementModal').style.display = 'flex';
+      }
+    }
+
+    // -------------------------------------------------------------
+    // UTILITIES CRUD & SPLIT PAY
+    // -------------------------------------------------------------
+    async function loadUtilities() {
+      try {
+        const res = await fetch('/api/expenses/utilities');
+        const j = await res.json();
+        if (j.success) {
+          utilitiesList = j.data;
+          renderUtilitiesTable();
+        }
+      } catch (e) {}
+    }
+
+    function renderUtilitiesTable() {
+      const tbody = document.getElementById('utilitiesTableBody');
+      tbody.innerHTML = '';
+      utilitiesList.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><b>${u.name_en}</b><br><small style="color:#2563eb;">${u.name_ar||''}</small></td>
+          <td><span class="badge badge-gray">${u.category}</span></td>
+          <td><b>${u.account_no || '—'}</b></td>
+          <td><b style="color:${u.current_due > 0 ? '#dc2626' : '#16a34a'}; font-size:14px;">${parseFloat(u.current_due).toFixed(2)}</b></td>
+          <td style="white-space:nowrap; display:flex; gap:4px;">
+            <button class="btn-action" style="background:#dbeafe; color:#1d4ed8; font-weight:bold;" onclick="openUtilityTransModal(${u.id}, 'ADD_BILL')">➕ Add Bill</button>
+            <button class="btn-action" style="background:#dcfce7; color:#15803d; font-weight:bold;" onclick="openUtilityTransModal(${u.id}, 'PAY_BILL')">💸 Pay</button>
+            <button class="btn-action" onclick="openEditUtilityModal(${u.id})">✏️</button>
+            <button class="btn-action" style="color:#b91c1c; border-color:#fca5a5;" onclick="deleteUtility(${u.id}, '${u.name_en.replace(/'/g, "\\'")}')">🗑️</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openAddUtilityModal() {
+      document.getElementById('util_edit_id').value = '';
+      document.getElementById('utilFormTitle').innerText = '➕ Add Utility Service / إضافة خدمة';
+      document.getElementById('util_form_name_en').value = '';
+      document.getElementById('util_form_name_ar').value = '';
+      document.getElementById('util_form_acc').value = '';
+      document.getElementById('util_form_due').value = '0.00';
+      document.getElementById('addEditUtilityModal').style.display = 'flex';
+    }
+
+    function openEditUtilityModal(uId) {
+      const u = utilitiesList.find(x => x.id === uId);
+      if (!u) return;
+      document.getElementById('util_edit_id').value = u.id;
+      document.getElementById('utilFormTitle').innerText = 'Edit ' + u.name_en;
+      document.getElementById('util_form_name_en').value = u.name_en;
+      document.getElementById('util_form_name_ar').value = u.name_ar || '';
+      document.getElementById('util_form_cat').value = u.category;
+      document.getElementById('util_form_acc').value = u.account_no || '';
+      document.getElementById('util_form_due').value = u.current_due;
+      document.getElementById('addEditUtilityModal').style.display = 'flex';
+    }
+
+    async function handleSaveUtility(e) {
+      e.preventDefault();
+      const editId = document.getElementById('util_edit_id').value;
+      const payload = {
+        name_en: document.getElementById('util_form_name_en').value.toUpperCase().trim(),
+        name_ar: document.getElementById('util_form_name_ar').value.trim(),
+        category: document.getElementById('util_form_cat').value,
+        account_no: document.getElementById('util_form_acc').value.trim(),
+        current_due: parseFloat(document.getElementById('util_form_due').value) || 0
+      };
+
+      const url = editId ? `/api/expenses/utilities/${editId}` : '/api/expenses/utilities';
+      const method = editId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const j = await res.json();
+      if (j.success) {
+        closeModal('addEditUtilityModal');
+        await loadUtilities();
+        await loadDashboardSummary();
+      } else { alert('Error: ' + j.error); }
+    }
+
+    async function deleteUtility(id, name) {
+      if (!confirm(`Are you sure you want to delete utility "${name}"?`)) return;
+      const res = await fetch('/api/expenses/utilities/' + id, { method: 'DELETE' });
+      const j = await res.json();
+      if (j.success) {
+        await loadUtilities();
+        await loadDashboardSummary();
+      } else { alert('Delete error: ' + j.error); }
+    }
+
+    function openUtilityTransModal(utilId, actionType) {
+      const u = utilitiesList.find(x => x.id === utilId);
+      if (!u) return;
+      document.getElementById('ut_id').value = u.id;
+      document.getElementById('ut_action').value = actionType;
+      document.getElementById('ut_name').innerText = u.name_en;
+      document.getElementById('ut_due').innerText = u.current_due.toFixed(2) + ' SAR';
+      document.getElementById('ut_notes').value = '';
+
+      if (actionType === 'ADD_BILL') {
+        document.getElementById('utilTransTitle').innerText = '➕ Add Bill Amount: ' + u.name_en;
+        document.getElementById('ut_add_bill_wrap').style.display = 'block';
+        document.getElementById('ut_pay_wrap').style.display = 'none';
+        document.getElementById('btnUtSubmit').innerText = 'Add Bill to Due';
+        document.getElementById('btnUtSubmit').style.background = '#2563eb';
+        setTimeout(() => document.getElementById('ut_bill_amt').focus(), 100);
+      } else {
+        document.getElementById('utilTransTitle').innerText = '💸 Pay Bill: ' + u.name_en;
+        document.getElementById('ut_add_bill_wrap').style.display = 'none';
+        document.getElementById('ut_pay_wrap').style.display = 'block';
+        document.getElementById('ut_cash_amt').value = u.current_due > 0 ? u.current_due.toFixed(2) : '';
+        document.getElementById('ut_bank_amt').value = '';
+        document.getElementById('btnUtSubmit').innerText = 'Pay & Deduct Account';
+        document.getElementById('btnUtSubmit').style.background = '#16a34a';
+        setTimeout(() => document.getElementById('ut_cash_amt').focus(), 100);
+      }
+      document.getElementById('utilityTransModal').style.display = 'flex';
+    }
+
+    async function handleUtilityTransSubmit(e) {
+      e.preventDefault();
+      const utilId = document.getElementById('ut_id').value;
+      const action = document.getElementById('ut_action').value;
+
+      if (action === 'ADD_BILL') {
+        const payload = {
+          amount: parseFloat(document.getElementById('ut_bill_amt').value),
+          bill_date: document.getElementById('ut_date').value,
+          description: document.getElementById('ut_notes').value
+        };
+        const res = await fetch(`/api/expenses/utilities/${utilId}/add-bill`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const j = await res.json();
+        if (j.success) {
+          closeModal('utilityTransModal');
+          await loadUtilities();
+          await loadDashboardSummary();
+        } else { alert('Error: ' + j.error); }
+      } else {
+        const payload = {
+          paid_cash: parseFloat(document.getElementById('ut_cash_amt').value) || 0,
+          paid_bank: parseFloat(document.getElementById('ut_bank_amt').value) || 0,
+          pay_date: document.getElementById('ut_date').value,
+          description: document.getElementById('ut_notes').value
+        };
+        const res = await fetch(`/api/expenses/utilities/${utilId}/pay`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const j = await res.json();
+        if (j.success) {
+          closeModal('utilityTransModal');
+          await loadUtilities();
+          await loadDashboardSummary();
+        } else { alert('Error: ' + j.error); }
+      }
+    }
+
+    // -------------------------------------------------------------
+    // PETTY CATEGORIES CRUD & EXPENSES
+    // -------------------------------------------------------------
+    async function loadPettyCategories() {
+      try {
+        const res = await fetch('/api/expenses/petty-categories');
+        const j = await res.json();
+        if (j.success) {
+          pettyCategories = j.data;
+          const select = document.getElementById('petty_cat');
+          select.innerHTML = '';
+          pettyCategories.forEach(c => {
+            select.innerHTML += `<option value="${c.name_en}">${c.icon||'🏷️'} ${c.name_en} ${c.name_ar ? '(' + c.name_ar + ')' : ''}</option>`;
+          });
+        }
+      } catch (e) {}
+    }
+
+    function openCategoriesModal() {
+      renderCategoriesList();
+      document.getElementById('categoriesModal').style.display = 'flex';
+    }
+
+    function renderCategoriesList() {
+      const tbody = document.getElementById('pettyCategoriesListBody');
+      tbody.innerHTML = '';
+      pettyCategories.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="padding:6px;"><b>${c.icon||'🏷️'} ${c.name_en}</b> <small style="color:#2563eb;">${c.name_ar||''}</small></td>
+          <td>
+            <button class="btn-action" style="color:#b91c1c; border-color:#fca5a5; padding:2px 6px;" onclick="deletePettyCategory(${c.id})">🗑️</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function handleAddPettyCat(e) {
+      e.preventDefault();
+      const val = document.getElementById('new_cat_name').value.trim();
+      if (!val) return;
+      const res = await fetch('/api/expenses/petty-categories', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ name_en: val })
+      });
+      const j = await res.json();
+      if (j.success) {
+        document.getElementById('new_cat_name').value = '';
+        await loadPettyCategories();
+        renderCategoriesList();
+      } else { alert('Error: ' + j.error); }
+    }
+
+    async function deletePettyCategory(id) {
+      if (!confirm('Delete this category?')) return;
+      const res = await fetch('/api/expenses/petty-categories/' + id, { method: 'DELETE' });
+      const j = await res.json();
+      if (j.success) {
+        await loadPettyCategories();
+        renderCategoriesList();
+      } else { alert('Error: ' + j.error); }
+    }
+
+    async function loadPetty() {
+      try {
+        const res = await fetch('/api/expenses/petty');
+        const j = await res.json();
+        if (j.success) {
+          pettyList = j.data;
+          renderPettyTable();
+        }
+      } catch (e) {}
+    }
+
+    function renderPettyTable() {
+      const tbody = document.getElementById('pettyTableBody');
+      tbody.innerHTML = '';
+      const todayStr = new Date().toISOString().slice(0, 10);
+      let todayTotal = 0;
+
+      pettyList.forEach(p => {
+        if (p.expense_date === todayStr) todayTotal += p.amount;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${p.expense_date}</td>
+          <td><b>${p.category}</b></td>
+          <td><span class="badge ${p.payment_mode === 'CASH' ? 'badge-green' : (p.payment_mode === 'BANK' ? 'badge-yellow' : 'badge-gray')}">${p.payment_mode}</span></td>
+          <td><b>${p.amount.toFixed(2)} SAR</b></td>
+          <td>${p.description || '—'}</td>
+          <td>
+            <button class="btn-action" style="color:#b91c1c; border-color:#fca5a5;" onclick="deletePetty(${p.id})">🗑️</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      document.getElementById('dispTodayPettyTotal').innerText = todayTotal.toFixed(2) + ' SAR';
+    }
+
+    function openAddPettyModal() {
+      document.getElementById('petty_cash_amt').value = '';
+      document.getElementById('petty_bank_amt').value = '';
+      document.getElementById('petty_desc').value = '';
+      document.getElementById('pettyModal').style.display = 'flex';
+      setTimeout(() => document.getElementById('petty_cash_amt').focus(), 100);
+    }
+
+    async function handlePettySubmit(e) {
+      e.preventDefault();
+      const payload = {
+        category: document.getElementById('petty_cat').value,
+        paid_cash: parseFloat(document.getElementById('petty_cash_amt').value) || 0,
+        paid_bank: parseFloat(document.getElementById('petty_bank_amt').value) || 0,
+        expense_date: document.getElementById('petty_date').value,
+        description: document.getElementById('petty_desc').value
+      };
+
+      const res = await fetch('/api/expenses/petty', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const j = await res.json();
+      if (j.success) {
+        closeModal('pettyModal');
+        await loadPetty();
+        await loadDashboardSummary();
+      } else { alert('Error: ' + j.error); }
+    }
+
+    async function deletePetty(id) {
+      if (!confirm('Are you sure you want to delete this expense?')) return;
+      await fetch('/api/expenses/petty/' + id, { method: 'DELETE' });
+      await loadPetty();
+      await loadDashboardSummary();
+    }
+
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+  </script>
+</body>
+</html>

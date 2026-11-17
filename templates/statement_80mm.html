@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>80mm POS Slip</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; }
+    body { background: #525659; padding: 20px; display: flex; justify-content: center; }
+    .pos-receipt {
+      width: 76mm; padding: 5mm; background: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3); font-size: 11px; line-height: 1.3;
+    }
+    .center { text-align: center; }
+    .divider { border-top: 1px dashed #000; margin: 6px 0; }
+    .flex-row { display: flex; justify-content: space-between; }
+    .bold { font-weight: bold; }
+    .btn-print-floating {
+      position: fixed; bottom: 25px; right: 25px; background: #2563eb; color: #fff;
+      border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer;
+    }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .pos-receipt { width: 100%; box-shadow: none; padding: 2mm; }
+      .btn-print-floating { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="btn-print-floating" onclick="window.print()">🖨️ Print 80mm</button>
+
+  <div class="pos-receipt">
+    <div class="center">
+      <h3 id="storeName" style="font-size: 14px;">MY RETAIL STORE</h3>
+      <div id="storeAr" style="font-size: 12px;">متجري</div>
+      <div id="storeVat">VAT: --</div>
+      <div class="divider"></div>
+      <div class="bold">STATEMENT / كشف حساب</div>
+      <div id="slipDate"></div>
+    </div>
+
+    <div class="divider"></div>
+    <div>
+      <div>Party: <b id="partyName"></b></div>
+      <div>Phone: <span id="partyPhone"></span></div>
+    </div>
+
+    <div class="divider"></div>
+    <div id="txList"></div>
+
+    <div class="divider"></div>
+    <div class="flex-row bold" style="font-size: 13px;">
+      <span>NET DUE:</span>
+      <span id="partyNetBal">0.00 SAR</span>
+    </div>
+    <div class="divider"></div>
+
+    <div class="center" style="font-size: 10px; margin-top: 5px;">
+      Thank you for your business!<br>
+      شكراً لتعاملكم معنا
+    </div>
+  </div>
+
+  <script>
+    async function loadData() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const partyId = urlParams.get('id');
+      const from = urlParams.get('from') || '';
+      const to = urlParams.get('to') || '';
+
+      document.getElementById('slipDate').innerText = new Date().toISOString().slice(0, 16).replace('T', ' ');
+
+      try {
+        const sRes = await fetch('/api/settings');
+        const sJson = await sRes.json();
+        if (sJson.success && sJson.data) {
+          document.getElementById('storeName').innerText = sJson.data.company_name_en || 'STORE';
+          document.getElementById('storeAr').innerText = sJson.data.company_name_ar || '';
+          document.getElementById('storeVat').innerText = 'VAT: ' + (sJson.data.vat_number || 'N/A');
+        }
+      } catch(e) {}
+
+      if (!partyId) return;
+      try {
+        const lRes = await fetch(`/api/parties/${partyId}/ledger?from=${from}&to=${to}`);
+        const lJson = await lRes.json();
+        if (lJson.success) {
+          document.getElementById('partyName').innerText = lJson.party.name_en;
+          document.getElementById('partyPhone').innerText = lJson.party.phone || 'N/A';
+          document.getElementById('partyNetBal').innerText = (parseFloat(lJson.party.current_balance) || 0).toFixed(2) + ' SAR';
+
+          const txContainer = document.getElementById('txList');
+          txContainer.innerHTML = '';
+          lJson.entries.forEach(e => {
+            const div = document.createElement('div');
+            div.style.marginBottom = '4px';
+            const change = e.debit > 0 ? ('+' + e.debit.toFixed(2)) : ('-' + e.credit.toFixed(2));
+            div.innerHTML = `
+              <div class="flex-row">
+                <span>${e.entry_date.slice(5)} ${e.reference_no || ''}</span>
+                <span class="bold">${change}</span>
+              </div>
+              <div style="font-size: 9px; color: #444;">${e.description || e.entry_type} | Bal: ${e.balance_after.toFixed(2)}</div>
+            `;
+            txContainer.appendChild(div);
+          });
+        }
+      } catch(e) {}
+    }
+    window.onload = loadData;
+  </script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>80mm Purchase Slip</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace; }
+    body { background: #525659; padding: 15px; display: flex; justify-content: center; }
+    .pos-receipt {
+      width: 76mm; padding: 4mm 3mm; background: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3); font-size: 11px; line-height: 1.25; color: #000;
+    }
+    .center { text-align: center; }
+    .divider { border-top: 1px dashed #000; margin: 5px 0; }
+    .flex-row { display: flex; justify-content: space-between; }
+    .bold { font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+    th { border-bottom: 1px dashed #000; padding: 3px 0; text-align: left; }
+    td { padding: 3px 0; vertical-align: top; }
+    .btn-print-floating {
+      position: fixed; bottom: 20px; right: 20px; background: #4f46e5; color: #fff;
+      border: none; padding: 10px 18px; border-radius: 6px; font-weight: bold; cursor: pointer;
+    }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .pos-receipt { width: 100%; box-shadow: none; padding: 1mm; }
+      .btn-print-floating { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="btn-print-floating" onclick="window.print()">🖨️ Print Slip</button>
+
+  <div class="pos-receipt">
+    <div class="center">
+      <h2 id="storeNameEn" style="font-size: 15px; font-weight: 900;">STORE NAME</h2>
+      <div id="storeAddress" style="font-size: 9.5px;">Address</div>
+      <div class="divider"></div>
+      <div class="bold" id="purTitle" style="font-size: 12px;">PURCHASE INWARD SLIP</div>
+      <div style="font-size: 10px;">سند استلام بضاعة ومشتريات</div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="flex-row"><span>Voucher No:</span><b id="purNo">--</b></div>
+    <div class="flex-row"><span>Date & Time:</span><span id="purDateTime">--</span></div>
+    <div class="flex-row"><span>Supplier:</span><b id="vendorName">VENDOR</b></div>
+    <div class="flex-row"><span>Supplier Bill:</span><b id="suppInvNo" style="color:#000;">--</b></div>
+
+    <div class="divider"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th style="text-align: center;">Qty</th>
+          <th style="text-align: right;">Cost</th>
+          <th style="text-align: right;">Total</th>
+        </tr>
+      </thead>
+      <tbody id="itemsBody"></tbody>
+    </table>
+
+    <div class="divider"></div>
+    <div class="flex-row"><span>Subtotal (Excl. VAT):</span><span id="subTotal">0.00</span></div>
+    <div class="flex-row"><span>15% VAT Amount:</span><span id="vatTotal">0.00</span></div>
+    <div class="flex-row bold" style="font-size: 13px; margin: 3px 0;">
+      <span>TOTAL PURCHASE:</span>
+      <span id="grandTotal">0.00 SAR</span>
+    </div>
+
+    <div class="divider"></div>
+    <div class="flex-row"><span>Payment:</span><b id="payMethod">CASH</b></div>
+    <div class="flex-row" id="paidCashRow"><span>Paid Cash:</span><span id="paidCash">0.00</span></div>
+    <div class="flex-row" id="paidBankRow"><span>Paid Bank/Card:</span><span id="paidBank">0.00</span></div>
+
+    <!-- Vendor Balance Breakdown Section -->
+    <div id="vendorBalBox" style="display:none; margin-top: 5px; padding-top: 5px; border-top: 1px dashed #000; font-size: 10.5px;">
+      <div class="flex-row"><span>Previous Due:</span><span id="prevBal">0.00 SAR</span></div>
+      <div class="flex-row"><span>Current Bill:</span><span id="currBill">0.00 SAR</span></div>
+      <div class="flex-row"><span>Paid at Inward:</span><span id="paidCounter">0.00 SAR</span></div>
+      <div class="flex-row bold" style="font-size: 12px; margin-top: 3px; border-top: 1px solid #000; padding-top: 3px;">
+        <span>NET PAYABLE:</span>
+        <b id="netVendorBal">0.00 SAR</b>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="center" style="font-size: 9.5px; margin-top: 4px;">
+      Inventory Stock Updated Successfully<br>
+      تم تحديث المخزون
+    </div>
+  </div>
+
+  <script>
+    async function init() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const purId = urlParams.get('id');
+      if (!purId) return;
+
+      try {
+        const res = await fetch('/api/purchases/' + purId);
+        const json = await res.json();
+        if (!json.success) return;
+        const pur = json.data;
+        const s = json.store || {};
+
+        document.getElementById('storeNameEn').innerText = s.company_name_en || 'RETAIL STORE';
+        document.getElementById('storeAddress').innerText = (s.street_en || '') + ', ' + (s.city_en || 'Saudi Arabia');
+
+        if (pur.is_return) document.getElementById('purTitle').innerText = 'PURCHASE RETURN SLIP';
+
+        document.getElementById('purNo').innerText = pur.purchase_no;
+        document.getElementById('purDateTime').innerText = pur.purchase_date + ' ' + (pur.purchase_time || '');
+        document.getElementById('vendorName').innerText = pur.vendor_name || 'LOCAL CASH VENDOR';
+        document.getElementById('suppInvNo').innerText = pur.supplier_inv_no || 'N/A';
+
+        const tbody = document.getElementById('itemsBody');
+        tbody.innerHTML = '';
+        pur.items.forEach(it => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${it.name_en}<br><small style="font-size:9px;">${it.name_ar || ''}</small></td>
+            <td style="text-align: center;">${it.quantity}</td>
+            <td style="text-align: right;">${it.cost_price.toFixed(2)}</td>
+            <td style="text-align: right;">${it.line_total.toFixed(2)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById('subTotal').innerText = pur.subtotal.toFixed(2);
+        document.getElementById('vatTotal').innerText = pur.vat_amount.toFixed(2);
+        document.getElementById('grandTotal').innerText = pur.total_amount.toFixed(2) + ' SAR';
+
+        document.getElementById('payMethod').innerText = pur.payment_method;
+        document.getElementById('paidCash').innerText = pur.paid_cash.toFixed(2);
+        document.getElementById('paidBank').innerText = pur.paid_bank.toFixed(2);
+
+        if (pur.party_id && (pur.payment_method === 'CREDIT' || pur.paid_credit > 0 || (json.party && json.party.sub_type === 'credit'))) {
+          document.getElementById('vendorBalBox').style.display = 'block';
+          const counterPaid = (pur.paid_cash + pur.paid_bank);
+          document.getElementById('prevBal').innerText = parseFloat(pur.prev_balance || 0).toFixed(2) + ' SAR';
+          document.getElementById('currBill').innerText = pur.total_amount.toFixed(2) + ' SAR';
+          document.getElementById('paidCounter').innerText = counterPaid.toFixed(2) + ' SAR';
+          document.getElementById('netVendorBal').innerText = parseFloat(pur.net_balance || (json.party ? json.party.current_balance : 0)).toFixed(2) + ' SAR';
+        }
+
+        if (urlParams.get('autoprint') === '1') {
+          setTimeout(() => { window.print(); }, 400);
+        }
+      } catch (err) { console.error(err); }
+    }
+    window.onload = init;
+  </script>
+</body>
+</html>

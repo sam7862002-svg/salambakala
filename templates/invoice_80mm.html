@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>POS Receipt 80mm</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      color: #000;
+    }
+    @page {
+      margin: 0;
+      size: 80mm auto;
+    }
+    body {
+      width: 70mm;
+      margin: 0 !important;
+      padding: 2mm 1.5mm 8mm 3.5mm;
+      background: #fff;
+      font-size: 11.5px;
+      line-height: 1.35;
+      direction: ltr !important;
+    }
+    .text-center { text-align: center !important; }
+    .text-right { text-align: right !important; }
+    .bold { font-weight: 900; }
+    
+    .store-title {
+      font-size: 15px;
+      font-weight: 900;
+      text-transform: uppercase;
+      text-align: center;
+      line-height: 1.2;
+    }
+    .store-ar {
+      font-size: 14px;
+      font-weight: 900;
+      direction: rtl !important;
+      text-align: center;
+      margin-top: 2px;
+      font-family: Tahoma, Arial, sans-serif;
+    }
+    .meta-line {
+      font-size: 10.5px;
+      font-weight: 700;
+      margin-top: 1px;
+      text-align: center;
+    }
+    .dashed-divider {
+      border-top: 1.5px dashed #000;
+      margin: 5px 0;
+      width: 100%;
+    }
+    .inv-title-box {
+      border: 1.2px solid #000;
+      padding: 2px 4px;
+      margin: 4px 0;
+      text-align: center;
+    }
+    .inv-title {
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    .inv-title-ar {
+      font-size: 11.5px;
+      font-weight: 900;
+      direction: rtl !important;
+      font-family: Tahoma, Arial, sans-serif;
+    }
+    .info-table {
+      width: 100%;
+      font-size: 11px;
+      font-weight: 800;
+      margin-bottom: 3px;
+      border-collapse: collapse;
+    }
+    .info-table td {
+      padding: 1px 0;
+      vertical-align: top;
+    }
+    .ar-subtext {
+      font-size: 9.5px;
+      font-weight: 800;
+      direction: rtl !important;
+      display: block;
+      color: #111;
+      font-family: Tahoma, Arial, sans-serif;
+    }
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 4px 0;
+      font-size: 11.5px;
+    }
+    .items-table th {
+      border-top: 1.5px dashed #000;
+      border-bottom: 1.5px dashed #000;
+      padding: 3px 0;
+      font-weight: 900;
+      font-size: 10.5px;
+    }
+    .items-table td {
+      padding: 2px 0;
+      vertical-align: top;
+    }
+    .item-ar {
+      font-size: 11.5px;
+      font-weight: 900;
+      direction: rtl !important;
+      font-family: Tahoma, Arial, sans-serif;
+    }
+    .totals-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      font-weight: 800;
+      margin-top: 3px;
+    }
+    .totals-table td {
+      padding: 2px 0;
+      vertical-align: middle;
+    }
+    .grand-total-row {
+      font-size: 13.5px;
+      font-weight: 900;
+      border-top: 1.5px dashed #000;
+      border-bottom: 1.5px dashed #000;
+    }
+    .grand-total-row td {
+      padding: 4px 0;
+    }
+
+    .qr-container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 8px 0 4px 0;
+      text-align: center;
+    }
+    #qrcode {
+      display: inline-block;
+      margin: 0 auto;
+      background: #fff;
+      padding: 3px;
+    }
+    #qrcode canvas, #qrcode img {
+      width: 190px !important;
+      height: 190px !important;
+      margin: 0 auto;
+      image-rendering: pixelated;
+    }
+    .footer-note {
+      font-size: 10.5px;
+      font-weight: 800;
+      text-align: center;
+      margin-top: 5px;
+    }
+    .footer-ar {
+      font-size: 12px;
+      font-weight: 900;
+      direction: rtl !important;
+      font-family: Tahoma, Arial, sans-serif;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+  <div class="text-center">
+    <div class="store-title" id="disp_store_en">STORE NAME</div>
+    <div class="store-ar" id="disp_store_ar">اسم المتجر</div>
+    <div class="meta-line">VAT No / الرقم الضريبي: <span id="disp_store_vat" class="bold">--</span></div>
+    <div class="meta-line" id="disp_store_cr_wrap" style="display:none;">CR No / السجل التجاري: <span id="disp_store_cr" class="bold"></span></div>
+    <div class="meta-line" id="disp_store_addr">Saudi Arabia</div>
+    <div class="meta-line" id="disp_store_phone">Tel / هاتف: --</div>
+  </div>
+
+  <div class="inv-title-box">
+    <div class="inv-title">SIMPLIFIED TAX INVOICE</div>
+    <div class="inv-title-ar">فاتورة ضريبية مبسطة</div>
+  </div>
+
+  <table class="info-table">
+    <tr>
+      <td width="48%">
+        Invoice No
+        <span class="ar-subtext">رقم الفاتورة</span>
+      </td>
+      <td width="52%" align="right" class="bold">
+        <span id="disp_inv_no">--</span>
+        <div style="font-size: 10px; color: #333;" id="disp_terminal_no"></div>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Date & Time
+        <span class="ar-subtext">التاريخ والوقت</span>
+      </td>
+      <td align="right" class="bold" id="disp_inv_date">--</td>
+    </tr>
+    <tr>
+      <td>
+        Customer
+        <span class="ar-subtext">العميل</span>
+      </td>
+      <td align="right" class="bold" id="disp_cust_name">WALK-IN CUSTOMER</td>
+    </tr>
+  </table>
+
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th align="left">
+          Description
+          <span class="ar-subtext" style="text-align:left;">الوصف</span>
+        </th>
+        <th width="28" align="center">
+          Qty
+          <span class="ar-subtext" style="text-align:center;">الكمية</span>
+        </th>
+        <th width="48" align="right">
+          Price
+          <span class="ar-subtext" style="text-align:right;">السعر</span>
+        </th>
+        <th width="54" align="right">
+          Total
+          <span class="ar-subtext" style="text-align:right;">المجموع</span>
+        </th>
+      </tr>
+    </thead>
+    <tbody id="itemsBody"></tbody>
+  </table>
+
+  <div class="dashed-divider"></div>
+
+  <table class="totals-table">
+    <tr>
+      <td align="left">
+        Subtotal (Excl. VAT)
+        <span class="ar-subtext">المجموع الفرعي (غير شامل الضريبة)</span>
+      </td>
+      <td align="right" class="bold" id="disp_subtotal">0.00</td>
+    </tr>
+    <tr>
+      <td align="left">
+        VAT (15%)
+        <span class="ar-subtext">ضريبة القيمة المضافة (١٥٪)</span>
+      </td>
+      <td align="right" class="bold" id="disp_vat">0.00</td>
+    </tr>
+    <tr class="grand-total-row">
+      <td align="left">
+        NET TOTAL (SAR)
+        <span class="ar-subtext">إجمالي المبلغ المستحق</span>
+      </td>
+      <td align="right" id="disp_net_total">0.00</td>
+    </tr>
+    <tr>
+      <td align="left">
+        Payment Method
+        <span class="ar-subtext">طريقة الدفع</span>
+      </td>
+      <td align="right" class="bold" id="disp_pay_mode">CASH / نقداً</td>
+    </tr>
+    <tr>
+      <td align="left">
+        Paid Cash
+        <span class="ar-subtext">المدفوع نقداً</span>
+      </td>
+      <td align="right" class="bold" id="disp_paid_cash">0.00</td>
+    </tr>
+  </table>
+
+  <div class="qr-container">
+    <div id="qrcode"></div>
+  </div>
+
+  <div class="footer-note">
+    Thank You For Shopping With Us<br>
+    <span class="footer-ar">شكراً لزيارتكم</span>
+  </div>
+
+  <script>
+    function getApiBase() {
+      const role = localStorage.getItem('pos_machine_role') || 'server';
+      const ip = localStorage.getItem('pos_server_ip') || '';
+      return (role === 'terminal' && ip) ? `http://${ip}:6060` : '';
+    }
+
+    function renderInvoiceData(data) {
+      if (!data) return;
+      const inv = data.data || {};
+      const store = data.store || {};
+
+      if (store.company_name_en) document.getElementById('disp_store_en').innerText = store.company_name_en;
+      if (store.company_name_ar) document.getElementById('disp_store_ar').innerText = store.company_name_ar;
+      if (store.vat_number) document.getElementById('disp_store_vat').innerText = store.vat_number;
+      
+      if (store.cr_number) {
+        document.getElementById('disp_store_cr_wrap').style.display = 'block';
+        document.getElementById('disp_store_cr').innerText = store.cr_number;
+      }
+
+      const addrParts = [];
+      if (store.building_no) addrParts.push('Bldg ' + store.building_no);
+      if (store.street_en) addrParts.push(store.street_en);
+      if (store.district_en) addrParts.push(store.district_en);
+      if (store.city_en) addrParts.push(store.city_en);
+      if (store.short_address) addrParts.push('(' + store.short_address + ')');
+      
+      const fullAddr = addrParts.length > 0 ? addrParts.join(', ') : (store.city_en ? store.city_en + ', Saudi Arabia' : 'Jeddah, Saudi Arabia');
+      document.getElementById('disp_store_addr').innerText = fullAddr;
+
+      if (store.phone) {
+        document.getElementById('disp_store_phone').innerText = 'Tel / هاتف: ' + store.phone;
+      } else {
+        document.getElementById('disp_store_phone').style.display = 'none';
+      }
+
+      if (inv.invoice_no) {
+        document.getElementById('disp_inv_no').innerText = inv.invoice_no;
+        const parts = inv.invoice_no.split('-');
+        if (parts[0].startsWith('T')) {
+          document.getElementById('disp_terminal_no').innerText = 'Counter: ' + parts[0];
+        } else if (inv.terminal_id) {
+          document.getElementById('disp_terminal_no').innerText = 'Counter: T' + inv.terminal_id;
+        }
+      }
+      if (inv.invoice_date) document.getElementById('disp_inv_date').innerText = inv.invoice_date + ' ' + (inv.invoice_time || '');
+      if (inv.customer_name) document.getElementById('disp_cust_name').innerText = inv.customer_name;
+
+      if (inv.subtotal) document.getElementById('disp_subtotal').innerText = parseFloat(inv.subtotal).toFixed(2);
+      if (inv.vat_amount) document.getElementById('disp_vat').innerText = parseFloat(inv.vat_amount).toFixed(2);
+      if (inv.total_amount) document.getElementById('disp_net_total').innerText = parseFloat(inv.total_amount).toFixed(2);
+      
+      const pMode = (inv.payment_method || 'CASH').toUpperCase();
+      let pModeText = 'CASH / نقداً';
+      if (pMode === 'BANK') pModeText = 'CARD / بطاقة شبكة';
+      else if (pMode === 'CREDIT') pModeText = 'CREDIT / آجل';
+      else if (pMode === 'SPLIT') pModeText = 'SPLIT / متعدد';
+      document.getElementById('disp_pay_mode').innerText = pModeText;
+
+      if (inv.paid_cash) document.getElementById('disp_paid_cash').innerText = parseFloat(inv.paid_cash).toFixed(2);
+
+      if (Array.isArray(inv.items) && inv.items.length > 0) {
+        const tb = document.getElementById('itemsBody');
+        tb.innerHTML = '';
+        inv.items.forEach(it => {
+          tb.innerHTML += `
+            <tr>
+              <td colspan="4">
+                <div class="bold">${it.name_en || ''}</div>
+                <div class="item-ar">${it.name_ar || ''}</div>
+              </td>
+            </tr>
+            <tr>
+              <td></td>
+              <td align="center" class="bold">${it.quantity}</td>
+              <td align="right">${parseFloat(it.selling_price).toFixed(2)}</td>
+              <td align="right" class="bold">${parseFloat(it.line_total).toFixed(2)}</td>
+            </tr>
+          `;
+        });
+      }
+
+      const qrTarget = document.getElementById('qrcode');
+      qrTarget.innerHTML = '';
+      const qrData = inv.zatca_qr || 'https://zatca.gov.sa';
+
+      new QRCode(qrTarget, {
+        text: qrData,
+        width: 190,
+        height: 190,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.L
+      });
+    }
+
+    window.onload = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const invId = urlParams.get('id');
+
+      if (invId) {
+        try {
+          const res = await fetch(`${getApiBase()}/api/invoices/` + invId);
+          const json = await res.json();
+          if (json.success) {
+            renderInvoiceData(json);
+          }
+        } catch (e) {}
+      } else {
+        renderInvoiceData({
+          store: {},
+          data: {
+            zatca_qr: 'https://zatca.gov.sa'
+          }
+        });
+      }
+    };
+  </script>
+</body>
+</html>

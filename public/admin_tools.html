@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin System Control & Designer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f1f5f9; color: #0f172a; padding: 30px 20px; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+    .box { background: #fff; border-radius: 12px; border: 1px solid #cbd5e1; padding: 22px; margin-bottom: 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+    .box h3 { font-size: 16px; margin-bottom: 12px; color: #0f172a; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; }
+    .btn { padding: 9px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; border: none; text-decoration: none; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-danger { background: #dc2626; color: #fff; }
+    .btn-success { background: #16a34a; color: #fff; }
+    .btn-nav { background: #e2e8f0; color: #334155; }
+    .input-ctrl { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px; width: 100%; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    
+    .editor-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
+    textarea.code-area { width: 100%; height: 420px; font-family: monospace; font-size: 12px; background: #0f172a; color: #38bdf8; border-radius: 8px; padding: 12px; border: none; resize: vertical; }
+    iframe.preview-frame { width: 100%; height: 420px; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; }
+
+    /* Custom Password Confirmation Modal */
+    .confirm-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; }
+    .confirm-box { background: #fff; border-radius: 12px; padding: 24px; width: 380px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="topbar">
+      <h2>🛠️ Admin Control, Template Designer & Maintenance</h2>
+      <a href="index.html" class="btn btn-nav">⬅ Dashboard</a>
+    </div>
+
+    <!-- 1. LIVE VISUAL TEMPLATE DESIGNER -->
+    <div class="box">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3>🎨 Visual Print Template Designer / مصمم قوالب الطباعة</h3>
+        <div style="display:flex; gap:8px;">
+          <select id="tplSelect" class="input-ctrl" style="width:280px;" onchange="loadTemplate()">
+            <option value="">Loading templates...</option>
+          </select>
+          <button type="button" class="btn btn-success" onclick="saveTemplate()">💾 Save Design</button>
+        </div>
+      </div>
+      <p style="font-size:12px; color:#64748b; margin-top:6px;">
+        Select a template from the dropdown. Changes appear immediately in the live preview on the right. / اختر القالب المطلوب من القائمة لمعاينته مباشرة.
+      </p>
+
+      <div class="editor-layout">
+        <div>
+          <label style="font-size:11px; font-weight:bold; color:#475569;">HTML / CSS Source Editor:</label>
+          <textarea id="tplEditor" class="code-area" oninput="updateLiveFrame()"></textarea>
+        </div>
+        <div>
+          <label style="font-size:11px; font-weight:bold; color:#475569;">Live Print Preview:</label>
+          <iframe id="tplFrame" class="preview-frame"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- 2. DATABASE FACTORY RESET / FRESH START -->
+      <div class="box" style="border-left: 4px solid #dc2626;">
+        <h3 style="color:#dc2626;">🔄 Fresh Database / إعادة ضبط المصنع</h3>
+        <p style="font-size:12px; color:#64748b; margin-bottom:12px;">
+          Use this after testing to clear old bills and transactions for a fresh shop start (License and store settings remain intact). / مسح العمليات القديمة لبدء متجر جديد مع الاحتفاظ بالإعدادات.
+        </p>
+
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:4px;">Reset Mode:</label>
+          <select id="resetType" class="input-ctrl">
+            <option value="transactions">Clear Transactions Only (Keep Items & Customers)</option>
+            <option value="full">Complete Fresh Wipe (Delete Items, Parties & All Bills)</option>
+          </select>
+        </div>
+
+        <button type="button" class="btn btn-danger" onclick="openResetModal()">⚠️ Reset & Make Database Fresh</button>
+      </div>
+
+      <!-- 3. FULL BACKUP, RESTORE & PASSWORD CHANGE -->
+      <div class="box">
+        <h3>🔐 Security, Backup & Restore</h3>
+        
+        <!-- Backup Download & Restore -->
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
+          <div>
+            <label style="font-size:12px; font-weight:bold; color:#475569;">1. Download Database Backup:</label>
+            <div style="margin-top:4px;">
+              <a href="/api/settings/backup" class="btn btn-primary" download>📥 Download Backup (.db)</a>
+            </div>
+          </div>
+
+          <div style="background:#f8fafc; border:1px dashed #cbd5e1; padding:10px; border-radius:6px; margin-top:4px;">
+            <label style="font-size:12px; font-weight:bold; color:#475569; display:block; margin-bottom:4px;">2. Restore / Upload Backup Database:</label>
+            <input type="file" id="dbFileInput" accept=".db" class="input-ctrl" style="padding:4px; font-size:12px; margin-bottom:8px;">
+            <button type="button" class="btn btn-success" style="padding:6px 12px; font-size:12px;" onclick="openRestoreModal()">📤 Upload & Restore Database</button>
+          </div>
+        </div>
+
+        <hr style="border:0; border-top:1px solid #e2e8f0; margin:14px 0;">
+
+        <!-- Change Master Password -->
+        <div>
+          <label style="font-size:12px; font-weight:bold; color:#475569;">Change Master Password:</label>
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:6px;">
+            <input type="password" id="oldPass" class="input-ctrl" placeholder="Current Password (Default: admin123)">
+            <input type="password" id="newPass" class="input-ctrl" placeholder="New Password">
+            <button type="button" class="btn btn-primary" onclick="changeAdminPass()">Update Password</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FACTORY RESET CONFIRMATION MODAL -->
+  <div id="resetModal" class="confirm-modal">
+    <div class="confirm-box">
+      <h3 style="color:#dc2626; border:none; margin-bottom:8px;">⚠️ Confirm Factory Reset</h3>
+      <p style="font-size:13px; color:#475569; margin-bottom:14px;">
+        This action will permanently erase old transactions!<br>Enter Master Password to continue / أدخل كلمة مرور المدير للمتابعة:
+      </p>
+      <input type="password" id="resetPassInput" class="input-ctrl" style="text-align:center; font-size:15px; margin-bottom:14px;" placeholder="Master Password">
+      <div style="display:flex; justify-content:center; gap:8px;">
+        <button type="button" class="btn btn-nav" onclick="closeModal('resetModal')">Cancel</button>
+        <button type="button" class="btn btn-danger" onclick="confirmFactoryReset()">Proceed Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESTORE DATABASE CONFIRMATION MODAL -->
+  <div id="restoreModal" class="confirm-modal">
+    <div class="confirm-box">
+      <h3 style="color:#16a34a; border:none; margin-bottom:8px;">📤 Confirm Database Restore</h3>
+      <p style="font-size:13px; color:#475569; margin-bottom:14px;">
+        The backup file will overwrite the current database!<br>Enter Master Password to continue / سيتم استبدال قاعدة البيانات الحالية بالنسخة الاحتياطية:
+      </p>
+      <input type="password" id="restorePassInput" class="input-ctrl" style="text-align:center; font-size:15px; margin-bottom:14px;" placeholder="Master Password">
+      <div style="display:flex; justify-content:center; gap:8px;">
+        <button type="button" class="btn btn-nav" onclick="closeModal('restoreModal')">Cancel</button>
+        <button type="button" class="btn btn-success" onclick="confirmDatabaseRestore()">Proceed Restore</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.onload = async () => {
+      if (!sessionStorage.getItem('admin_authenticated')) {
+        alert('Unauthorized access. Please login from Dashboard.');
+        window.location.href = 'index.html';
+        return;
+      }
+      await fetchTemplatesList();
+    };
+
+    async function fetchTemplatesList() {
+      try {
+        const res = await fetch('/api/settings/templates-list');
+        const j = await res.json();
+        if (j.success && j.files) {
+          const select = document.getElementById('tplSelect');
+          select.innerHTML = '';
+          j.files.forEach(file => {
+            const opt = document.createElement('option');
+            opt.value = file;
+            opt.innerText = file;
+            select.appendChild(opt);
+          });
+          if (j.files.length > 0) loadTemplate();
+        }
+      } catch (e) {
+        alert('Could not load templates list');
+      }
+    }
+
+    async function loadTemplate() {
+      const file = document.getElementById('tplSelect').value;
+      if (!file) return;
+      try {
+        const res = await fetch('/api/settings/template-content/' + file);
+        const j = await res.json();
+        if (j.success) {
+          document.getElementById('tplEditor').value = j.content;
+          updateLiveFrame();
+        }
+      } catch (e) {}
+    }
+
+    function updateLiveFrame() {
+      const content = document.getElementById('tplEditor').value;
+      const doc = document.getElementById('tplFrame').contentWindow.document;
+      doc.open();
+      doc.write(content);
+      doc.close();
+    }
+
+    async function saveTemplate() {
+      const file = document.getElementById('tplSelect').value;
+      const content = document.getElementById('tplEditor').value;
+
+      try {
+        const res = await fetch('/api/settings/template-content/' + file, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content })
+        });
+        const j = await res.json();
+        if (j.success) {
+          alert('🎉 ' + j.message);
+        } else {
+          alert('Error: ' + j.error);
+        }
+      } catch (e) {
+        alert('Failed to save template. Make sure app is running as Administrator.');
+      }
+    }
+
+    function openResetModal() {
+      document.getElementById('resetPassInput').value = '';
+      document.getElementById('resetModal').style.display = 'flex';
+      document.getElementById('resetPassInput').focus();
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    async function confirmFactoryReset() {
+      const resetType = document.getElementById('resetType').value;
+      const password = document.getElementById('resetPassInput').value;
+      if (!password) { alert('Please enter Master Password'); return; }
+
+      try {
+        const res = await fetch('/api/settings/factory-reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password, resetType })
+        });
+        const j = await res.json();
+        if (j.success) {
+          alert('✅ ' + j.message);
+          window.location.href = 'index.html';
+        } else {
+          alert('❌ ' + (j.error || 'Reset failed'));
+        }
+      } catch (e) {
+        alert('Failed to execute reset');
+      }
+    }
+
+    function openRestoreModal() {
+      const fileInput = document.getElementById('dbFileInput');
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert('Please select a backup (.db) file to restore. / يرجى اختيار ملف النسخة الاحتياطية أولاً.');
+        return;
+      }
+      document.getElementById('restorePassInput').value = '';
+      document.getElementById('restoreModal').style.display = 'flex';
+      document.getElementById('restorePassInput').focus();
+    }
+
+    async function confirmDatabaseRestore() {
+      const password = document.getElementById('restorePassInput').value;
+      if (!password) { alert('Please enter Master Password'); return; }
+
+      const fileInput = document.getElementById('dbFileInput');
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64Data = e.target.result;
+        try {
+          const res = await fetch('/api/settings/restore-database', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dbBase64: base64Data, password })
+          });
+          const j = await res.json();
+          if (j.success) {
+            alert('🎉 ' + j.message);
+            window.location.href = 'index.html';
+          } else {
+            alert('❌ ' + (j.error || 'Restore failed'));
+          }
+        } catch (err) {
+          alert('Restore request failed');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function changeAdminPass() {
+      const oldPass = document.getElementById('oldPass').value;
+      const newPass = document.getElementById('newPass').value;
+
+      if (!oldPass || !newPass) { alert('Please enter both passwords'); return; }
+
+      try {
+        const res = await fetch('/api/settings/change-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ oldPassword: oldPass, newPassword: newPass })
+        });
+        const j = await res.json();
+        if (j.success) {
+          alert('✅ ' + j.message);
+          document.getElementById('oldPass').value = '';
+          document.getElementById('newPass').value = '';
+        } else {
+          alert('❌ ' + j.error);
+        }
+      } catch (e) {
+        alert('Failed to update password');
+      }
+    }
+  </script>
+</body>
+</html>

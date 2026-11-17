@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tax Invoice A4</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #fff; color: #0f172a; padding: 25px 35px; width: 210mm; margin: 0 auto; font-size: 13px; }
+    @media print {
+      body { width: 100%; padding: 15mm 20mm; }
+      @page { size: A4; margin: 0; }
+    }
+    .header-table { width: 100%; border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 16px; }
+    .store-name-en { font-size: 20px; font-weight: 900; color: #0369a1; text-transform: uppercase; }
+    .store-name-ar { font-size: 15px; font-weight: bold; color: #475569; direction: rtl; }
+    .inv-title { font-size: 22px; font-weight: 900; color: #0f172a; text-align: right; }
+    .inv-title-ar { font-size: 14px; font-weight: bold; color: #0284c7; text-align: right; }
+
+    .party-boxes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+    .p-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 12px; font-size: 12px; line-height: 1.5; }
+    .p-box-title { font-weight: bold; color: #0369a1; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 6px; display: flex; justify-content: space-between; }
+
+    table.items-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    table.items-table th { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 8px 10px; font-size: 11.5px; font-weight: bold; color: #334155; }
+    table.items-table td { border: 1px solid #cbd5e1; padding: 8px 10px; font-size: 12px; }
+
+    .bottom-section { display: grid; grid-template-columns: 140px 1fr 240px; gap: 14px; align-items: start; }
+    .qr-box { width: 130px; height: 130px; border: 1px solid #cbd5e1; padding: 4px; border-radius: 6px; }
+    .qr-box img { width: 100%; height: 100%; }
+
+    .bank-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 14px; font-size: 12px; line-height: 1.6; }
+    .bank-title { font-weight: bold; color: #0369a1; border-bottom: 1px dashed #cbd5e1; padding-bottom: 4px; margin-bottom: 6px; }
+
+    .totals-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .totals-table td { padding: 4px 6px; }
+    .totals-table .grand-row td { font-size: 15px; font-weight: 900; color: #0369a1; border-top: 2px solid #0284c7; border-bottom: 2px solid #0284c7; padding: 6px; }
+
+    .seal-wrap { text-align: center; margin-top: 15px; }
+    .seal-wrap img { max-height: 75px; max-width: 140px; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+</head>
+<body>
+  <table class="header-table">
+    <tr>
+      <td style="width: 60%; vertical-align: top;">
+        <div class="store-name-en" id="disp_company_name_en">RETAIL STORE</div>
+        <div class="store-name-ar" id="disp_company_name_ar">متجر التجزئة</div>
+        <div style="font-size: 12px; color: #475569; margin-top: 5px;">
+          VAT No / الرقم الضريبي: <b id="disp_store_vat">300000000000003</b><br>
+          CR No / السجل التجاري: <b id="disp_store_cr">—</b><br>
+          <span id="disp_store_address">Jeddah, Saudi Arabia</span>
+        </div>
+      </td>
+      <td style="width: 40%; vertical-align: top;">
+        <div class="inv-title">TAX INVOICE</div>
+        <div class="inv-title-ar">فاتورة ضريبية</div>
+        <div style="font-size: 12px; color: #475569; text-align: right; margin-top: 6px;">
+          Invoice No / رقم الفاتورة: <b id="disp_inv_no">INV-0001</b> <span id="disp_term_badge" style="font-size:11px; background:#e0f2fe; color:#0369a1; padding:1px 5px; border-radius:3px;"></span><br>
+          Date / التاريخ: <span id="disp_inv_date">2026-11-09</span><br>
+          Time / الوقت: <span id="disp_inv_time">20:48:21</span>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <div class="party-boxes">
+    <div class="p-box">
+      <div class="p-box-title"><span>BUYER / بيانات العميل</span><span id="disp_buyer_badge">REGISTERED</span></div>
+      Name / الاسم: <b id="disp_buyer_name">Walk-in Customer</b><br>
+      Phone / الهاتف: <span id="disp_buyer_phone">N/A</span><br>
+      VAT No / الرقم الضريبي: <span id="disp_buyer_vat">N/A</span> | CR: <span id="disp_buyer_cr">N/A</span><br>
+      Address / العنوان: <span id="disp_buyer_addr">N/A</span>
+    </div>
+    <div class="p-box">
+      <div class="p-box-title"><span>PAYMENT / شروط السداد</span><span id="disp_pay_term">CASH</span></div>
+      Payment Mode / طريقة الدفع: <b id="disp_pay_method">CASH</b><br>
+      Paid at Counter / المدفوع حالياً: <span id="disp_paid_counter">0.00</span> SAR<br>
+      Charged to Account / آجل على الحساب: <span id="disp_charged_credit">0.00</span> SAR
+    </div>
+  </div>
+
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th width="30">#</th>
+        <th>Item Description / الوصف</th>
+        <th width="50">Unit</th>
+        <th width="50">Qty</th>
+        <th width="75">Unit Price</th>
+        <th width="85">Taxable (SAR)</th>
+        <th width="65">VAT (15%)</th>
+        <th width="90" style="text-align: right;">Total (SAR)</th>
+      </tr>
+    </thead>
+    <tbody id="items_body"></tbody>
+  </table>
+
+  <div class="bottom-section">
+    <div class="qr-box">
+      <canvas id="qr_canvas" style="width:100%; height:100%;"></canvas>
+    </div>
+
+    <div class="bank-box">
+      <div class="bank-title">Bank Details / الحساب البنكي:</div>
+      Bank Name: <b id="disp_bank_name">N/A</b><br>
+      Account No: <b id="disp_acc_no">N/A</b><br>
+      IBAN: <b id="disp_iban">N/A</b>
+      <div style="font-size: 10px; color: #64748b; margin-top: 8px;">
+        🛡️ ZATCA Phase-2 Compliant Electronic Invoice<br>
+        فاتورة إلكترونية معتمدة من هيئة الزكاة والضريبة والجمارك
+      </div>
+    </div>
+
+    <div>
+      <table class="totals-table">
+        <tr>
+          <td>Total Taxable / الخاضع:</td>
+          <td style="text-align: right;"><b id="disp_tot_taxable">0.00</b></td>
+        </tr>
+        <tr>
+          <td>VAT 15% / الضريبة:</td>
+          <td style="text-align: right;"><b id="disp_tot_vat">0.00</b></td>
+        </tr>
+        <tr class="grand-row">
+          <td>Grand Total / الإجمالي:</td>
+          <td style="text-align: right;"><b id="disp_grand_total">0.00</b></td>
+        </tr>
+        <tr>
+          <td>Previous Balance / الرصيد:</td>
+          <td style="text-align: right;"><span id="disp_prev_bal">0.00</span></td>
+        </tr>
+        <tr style="font-weight: bold; color: #dc2626;">
+          <td>Net Balance Due / المتبقي:</td>
+          <td style="text-align: right;"><span id="disp_net_bal">0.00</span></td>
+        </tr>
+      </table>
+
+      <div class="seal-wrap" id="seal_container">
+        <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Official Seal & Signature</div>
+        <img id="disp_seal_img" src="" style="display: none;">
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 25px; border-top: 1px solid #e2e8f0; padding-top: 8px; font-size: 11px; color: #64748b; text-align: center;">
+    Thank you for your business! نشكركم على حسن تعاملكم معنا<br>
+    Original Tax Invoice generated electronically.
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const invoiceId = params.get('id');
+
+    function f(val) { return (parseFloat(val) || 0).toFixed(2); }
+
+    window.onload = async () => {
+      if (!invoiceId) return;
+      try {
+        const res = await fetch(`/api/invoices/${invoiceId}`);
+        const j = await res.json();
+        if (j.success && j.data) {
+          renderInvoice(j.data, j.store, j.party);
+        }
+      } catch (e) {}
+    };
+
+    function renderInvoice(inv, store = {}, party = null) {
+      document.getElementById('disp_company_name_en').innerText = store.company_name_en || 'RETAIL STORE';
+      document.getElementById('disp_company_name_ar').innerText = store.company_name_ar || '';
+      document.getElementById('disp_store_vat').innerText = store.vat_number || '300000000000003';
+      document.getElementById('disp_store_cr').innerText = store.cr_number || '—';
+      document.getElementById('disp_store_address').innerText = `${store.building_no || ''} ${store.street_en || ''}, ${store.district_en || ''}, ${store.city_en || 'Jeddah'}`;
+
+      document.getElementById('disp_inv_no').innerText = inv.invoice_no;
+      if (inv.invoice_no && inv.invoice_no.startsWith('T')) {
+        document.getElementById('disp_term_badge').innerText = 'Counter ' + inv.invoice_no.split('-')[0];
+      }
+      document.getElementById('disp_inv_date').innerText = inv.invoice_date;
+      document.getElementById('disp_inv_time').innerText = inv.invoice_time || '';
+
+      document.getElementById('disp_buyer_name').innerText = inv.customer_name || 'Walk-in Customer';
+      document.getElementById('disp_buyer_phone').innerText = inv.customer_phone || (party ? party.phone : 'N/A');
+      document.getElementById('disp_buyer_vat').innerText = inv.customer_vat || (party ? party.vat_number : 'N/A') || 'N/A';
+      document.getElementById('disp_buyer_cr').innerText = inv.customer_cr || (party ? party.cr_number : 'N/A') || 'N/A';
+      document.getElementById('disp_buyer_addr').innerText = inv.customer_address || (party ? party.short_address : 'N/A') || 'N/A';
+
+      document.getElementById('disp_pay_method').innerText = inv.payment_method;
+      const counterPaid = (parseFloat(inv.paid_cash || 0) + parseFloat(inv.paid_bank || 0));
+      document.getElementById('disp_paid_counter').innerText = f(counterPaid);
+      document.getElementById('disp_charged_credit').innerText = f(inv.paid_credit);
+
+      // Bank Details Rendering properly
+      document.getElementById('disp_bank_name').innerText = store.bank_name || 'N/A';
+      document.getElementById('disp_acc_no').innerText = store.account_number || 'N/A';
+      document.getElementById('disp_iban').innerText = store.iban || 'N/A';
+
+      // Items
+      const tbody = document.getElementById('items_body');
+      tbody.innerHTML = '';
+      (inv.items || []).forEach((it, idx) => {
+        const lineTot = parseFloat(it.line_total);
+        const vat = parseFloat(it.vat_amount);
+        const taxable = lineTot - vat;
+        const rate = it.selling_price || (lineTot / it.quantity);
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${idx + 1}</td>
+            <td><b>${it.name_en}</b><br><small style="color:#64748b;">${it.name_ar || ''}</small></td>
+            <td>${it.unit || 'PCS'}</td>
+            <td>${it.quantity}</td>
+            <td>${f(rate)}</td>
+            <td>${f(taxable)}</td>
+            <td>${f(vat)}</td>
+            <td style="text-align: right; font-weight: bold;">${f(lineTot)}</td>
+          </tr>
+        `;
+      });
+
+      document.getElementById('disp_tot_taxable').innerText = f(inv.subtotal);
+      document.getElementById('disp_tot_vat').innerText = f(inv.vat_amount);
+      document.getElementById('disp_grand_total').innerText = f(inv.total_amount) + ' SAR';
+      document.getElementById('disp_prev_bal').innerText = f(inv.prev_balance);
+      document.getElementById('disp_net_bal').innerText = f(inv.net_balance) + ' SAR';
+
+      if (store.store_seal_img) {
+        const sealImg = document.getElementById('disp_seal_img');
+        sealImg.src = store.store_seal_img;
+        sealImg.style.display = 'inline-block';
+      }
+
+      if (inv.zatca_qr) {
+        QRCode.toCanvas(document.getElementById('qr_canvas'), inv.zatca_qr, { width: 120, margin: 1 }, function (error) {});
+      }
+    }
+  </script>
+</body>
+</html>
